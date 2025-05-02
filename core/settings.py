@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['orbit-platform-production-e049.up.railway.app']
 
-CSRF_TRUSTED_ORIGINS = ["https://orbit-platform-production-e049.up.railway.app/"]
+CSRF_TRUSTED_ORIGINS = ["https://orbit-platform-production-e049.up.railway.app"]
 
 # Application definition
 

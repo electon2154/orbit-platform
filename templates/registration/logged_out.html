@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "تم تسجيل الخروج" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h2 class="mb-4">{% trans "تم تسجيل الخروج بنجاح" %}</h2>
+                    <p class="mb-4">{% trans "شكراً لاستخدامك منصتنا" %}</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'user_accounts:login' %}" class="btn btn-primary">{% trans "تسجيل الدخول مرة أخرى" %}</a>
+                        <a href="{% url 'home' %}" class="btn btn-secondary">{% trans "العودة للصفحة الرئيسية" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Admin Dashboard" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ user.profile_picture.url|default:'/static/images/default-admin.png' }}" 
+                             alt="{{ user.get_full_name }}" 
+                             class="rounded-circle me-3" 
+                             style="width: 80px; height: 80px; object-fit: cover;">
+                        <div>
+                            <h2 class="mb-1">{% trans "Welcome" %}, {{ user.get_full_name }}</h2>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-shield-alt me-2"></i>{% trans "Administrator" %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "Total Companies" %}</h5>
+                    <h2 class="mb-0">{{ total_companies }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "Total Customers" %}</h5>
+                    <h2 class="mb-0">{{ total_customers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "Total Products" %}</h5>
+                    <h2 class="mb-0">{{ total_products }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "Total Revenue" %}</h5>
+                    <h2 class="mb-0">{{ total_revenue|floatformat:2 }} {% trans "SAR" %}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mb-4">
+        <div class="col-md-8 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "Recent Activity" %}</h5>
+                    <a href="{% url 'user_accounts:activity_log' %}" class="btn btn-sm btn-primary">
+                        {% trans "View All" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "User" %}</th>
+                                    <th>{% trans "Action" %}</th>
+                                    <th>{% trans "Details" %}</th>
+                                    <th>{% trans "Time" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>{{ activity.user.get_full_name }}</td>
+                                    <td>{{ activity.get_action_display }}</td>
+                                    <td>{{ activity.details }}</td>
+                                    <td>{{ activity.timestamp|timesince }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">{% trans "No recent activity" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "System Status" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {% trans "Database" %}
+                            <span class="badge bg-success">{% trans "Online" %}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {% trans "Storage" %}
+                            <span class="badge bg-{{ storage_status_color }}">{{ storage_usage }}%</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {% trans "Memory Usage" %}
+                            <span class="badge bg-{{ memory_status_color }}">{{ memory_usage }}%</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {% trans "Active Users" %}
+                            <span class="badge bg-info">{{ active_users }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "User Management" %}</h5>
+                    <div>
+                        <a href="{% url 'user_accounts:company_create' %}" class="btn btn-sm btn-success me-2">
+                            <i class="fas fa-plus me-2"></i>{% trans "Add Company" %}
+                        </a>
+                        <a href="{% url 'user_accounts:customer_create' %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-plus me-2"></i>{% trans "Add Customer" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="userTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="companies-tab" data-bs-toggle="tab" data-bs-target="#companies" type="button" role="tab">
+                                {% trans "Companies" %}
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab">
+                                {% trans "Customers" %}
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="userTabsContent">
+                        <!-- Companies Tab -->
+                        <div class="tab-pane fade show active" id="companies" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Logo" %}</th>
+                                            <th>{% trans "Name" %}</th>
+                                            <th>{% trans "City" %}</th>
+                                            <th>{% trans "Products" %}</th>
+                                            <th>{% trans "Status" %}</th>
+                                            <th>{% trans "Actions" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for company in recent_companies %}
+                                        <tr>
+                                            <td>
+                                                <img src="{{ company.logo.url|default:'/static/images/default-company.png' }}" 
+                                                     alt="{{ company.company_name }}"
+                                                     class="img-thumbnail"
+                                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                            </td>
+                                            <td>{{ company.company_name }}</td>
+                                            <td>{{ company.city }}</td>
+                                            <td>{{ company.products.count }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ company.is_active|yesno:'success,danger' }}">
+                                                    {{ company.is_active|yesno:_("Active,Inactive") }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'user_accounts:company_update' company.id %}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-danger" 
+                                                        onclick="toggleCompanyStatus({{ company.id }})">
+                                                    <i class="fas fa-{{ company.is_active|yesno:'ban,check' }}"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center">{% trans "No companies found" %}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Customers Tab -->
+                        <div class="tab-pane fade" id="customers" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Logo" %}</th>
+                                            <th>{% trans "Store Name" %}</th>
+                                            <th>{% trans "City" %}</th>
+                                            <th>{% trans "Orders" %}</th>
+                                            <th>{% trans "Status" %}</th>
+                                            <th>{% trans "Actions" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for customer in recent_customers %}
+                                        <tr>
+                                            <td>
+                                                <img src="{{ customer.logo.url|default:'/static/images/default-customer.png' }}" 
+                                                     alt="{{ customer.store_name }}"
+                                                     class="img-thumbnail"
+                                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                            </td>
+                                            <td>{{ customer.store_name }}</td>
+                                            <td>{{ customer.city }}</td>
+                                            <td>{{ customer.orders.count }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ customer.is_active|yesno:'success,danger' }}">
+                                                    {{ customer.is_active|yesno:_("Active,Inactive") }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'user_accounts:customer_update' customer.id %}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-danger" 
+                                                        onclick="toggleCustomerStatus({{ customer.id }})">
+                                                    <i class="fas fa-{{ customer.is_active|yesno:'ban,check' }}"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center">{% trans "No customers found" %}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCompanyStatus(companyId) {
+    if (confirm('{% trans "Are you sure you want to change this company\'s status?" %}')) {
+        fetch(`/companies/${companyId}/toggle-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function toggleCustomerStatus(customerId) {
+    if (confirm('{% trans "Are you sure you want to change this customer\'s status?" %}')) {
+        fetch(`/customers/${customerId}/toggle-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+</script>
+{% endblock %} 

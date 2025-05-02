@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}تسجيل الدخول - B2B Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">تسجيل الدخول</h2>
+                
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p class="mb-2">
+                            <a href="{% url 'user_accounts:password_reset' %}" class="text-decoration-none">
+                                نسيت كلمة المرور؟
+                            </a>
+                        </p>
+                        <p>
+                            ليس لديك حساب؟ 
+                            <div class="btn-group mt-2">
+                                <a href="{% url 'user_accounts:register_company' %}" class="btn btn-outline-primary">
+                                    تسجيل كشركة
+                                </a>
+                                <a href="{% url 'user_accounts:register_customer' %}" class="btn btn-outline-primary">
+                                    تسجيل كمتجر
+                                </a>
+                            </div>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,201 @@
+<!-- Order Details Modal -->
+<div class="modal fade" id="viewOrderModal" tabindex="-1" aria-labelledby="viewOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewOrderModalLabel">تفاصيل الطلب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Order Header -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">معلومات الطلب</h6>
+                        <p><strong>رقم الطلب:</strong> <span id="orderNumber"></span></p>
+                        <p><strong>التاريخ:</strong> <span id="orderDate"></span></p>
+                        <p><strong>الحالة:</strong> <span id="orderStatus" class="badge"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3">معلومات المتجر</h6>
+                        <p><strong>اسم المتجر:</strong> <span id="storeName"></span></p>
+                        <p><strong>المدينة:</strong> <span id="storeCity"></span></p>
+                        <p><strong>رقم الهاتف:</strong> <span id="storePhone"></span></p>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="table-responsive mb-4">
+                    <h6 class="mb-3">المنتجات</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>السعر</th>
+                                <th>المجموع</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItems"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>المجموع الفرعي:</strong></td>
+                                <td id="subtotal"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>الضريبة:</strong></td>
+                                <td id="tax"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>المجموع النهائي:</strong></td>
+                                <td id="total"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Order Notes -->
+                <div class="mb-4">
+                    <h6 class="mb-3">ملاحظات الطلب</h6>
+                    <div id="orderNotes" class="p-3 bg-light rounded"></div>
+                </div>
+
+                <!-- Order Timeline -->
+                <div>
+                    <h6 class="mb-3">سجل الطلب</h6>
+                    <div id="orderTimeline" class="timeline">
+                        <!-- Timeline items will be added dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="printOrderBtn">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-right: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0d6efd;
+}
+
+.timeline-item .timeline-date {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.timeline-item .timeline-content {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+}
+</style>
+
+<script>
+function updateOrderModal(data) {
+    // Update order header information
+    document.getElementById('orderNumber').textContent = `#${data.id}`;
+    document.getElementById('orderDate').textContent = new Date(data.created_at).toLocaleString('ar-SA');
+    const statusBadge = document.getElementById('orderStatus');
+    statusBadge.textContent = data.status_display;
+    statusBadge.className = `badge bg-${data.status_color}`;
+
+    // Update store information
+    document.getElementById('storeName').textContent = data.customer.store_name;
+    document.getElementById('storeCity').textContent = data.customer.city;
+    document.getElementById('storePhone').textContent = data.customer.phone;
+
+    // Update order items
+    const orderItemsBody = document.getElementById('orderItems');
+    orderItemsBody.innerHTML = '';
+    data.items.forEach(item => {
+        orderItemsBody.innerHTML += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        ${item.product.image ? `<img src="${item.product.image}" width="40" height="40" class="rounded me-2" alt="${item.product.name}">` : ''}
+                        ${item.product.name}
+                    </div>
+                </td>
+                <td>${item.quantity}</td>
+                <td>${new Intl.NumberFormat('ar-SA', {
+                    style: 'currency',
+                    currency: 'SAR'
+                }).format(item.price)}</td>
+                <td>${new Intl.NumberFormat('ar-SA', {
+                    style: 'currency',
+                    currency: 'SAR'
+                }).format(item.total)}</td>
+            </tr>
+        `;
+    });
+
+    // Update totals
+    document.getElementById('subtotal').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.subtotal);
+    document.getElementById('tax').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.tax);
+    document.getElementById('total').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.total);
+
+    // Update order notes
+    document.getElementById('orderNotes').textContent = data.notes || 'لا توجد ملاحظات';
+
+    // Update order timeline
+    const timeline = document.getElementById('orderTimeline');
+    timeline.innerHTML = '';
+    data.timeline.forEach(event => {
+        timeline.innerHTML += `
+            <div class="timeline-item">
+                <div class="timeline-date">${new Date(event.timestamp).toLocaleString('ar-SA')}</div>
+                <div class="timeline-content">
+                    <strong>${event.status}</strong>
+                    ${event.notes ? `<p class="mb-0">${event.notes}</p>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    // Initialize print button
+    document.getElementById('printOrderBtn').onclick = () => {
+        window.print();
+    };
+}
+</script> 

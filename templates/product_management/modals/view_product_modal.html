@@ -1,0 +1,117 @@
+<!-- Product Details Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-labelledby="viewProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewProductModalLabel">تفاصيل المنتج</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Product Image -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <img id="productImage" src="" class="card-img-top" alt="صورة المنتج">
+                        </div>
+                    </div>
+                    <!-- Product Details -->
+                    <div class="col-md-8">
+                        <h3 id="productName" class="mb-3"></h3>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>السعر:</strong> <span id="productPrice"></span> ريال</p>
+                                <p><strong>الكمية المتاحة:</strong> <span id="productStock"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>الشركة:</strong> <span id="productCompany"></span></p>
+                                <p><strong>التصنيف:</strong> <span id="productCategory"></span></p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>الوصف</h5>
+                            <p id="productDescription" class="text-muted"></p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Product Specifications -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5>المواصفات</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>الخاصية</th>
+                                        <th>القيمة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productSpecifications">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Product Statistics -->
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>إجمالي المبيعات</h6>
+                                <h3 id="totalSales">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>متوسط التقييم</h6>
+                                <h3 id="averageRating">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>عدد الطلبات</h6>
+                                <h3 id="totalOrders">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateProductModal(data) {
+    // Update basic information
+    document.getElementById('productImage').src = data.image || '/static/images/default-product.png';
+    document.getElementById('productName').textContent = data.name;
+    document.getElementById('productPrice').textContent = data.price.toLocaleString('ar-SA');
+    document.getElementById('productStock').textContent = data.stock;
+    document.getElementById('productCompany').textContent = data.company;
+    document.getElementById('productCategory').textContent = data.category;
+    document.getElementById('productDescription').textContent = data.description;
+
+    // Update specifications
+    const specificationsTable = document.getElementById('productSpecifications');
+    specificationsTable.innerHTML = '';
+    data.specifications.forEach(spec => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${spec.name}</td>
+            <td>${spec.value}</td>
+        `;
+        specificationsTable.appendChild(row);
+    });
+
+    // Update statistics
+    document.getElementById('totalSales').textContent = data.total_sales.toLocaleString('ar-SA');
+    document.getElementById('averageRating').textContent = data.average_rating.toFixed(1);
+    document.getElementById('totalOrders').textContent = data.total_orders;
+}
+</script> 

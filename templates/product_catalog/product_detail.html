@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-md-5">
+            <div class="card mb-4">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% else %}
+                <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="No image">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="card-title">{{ product.name }}</h1>
+                    <p class="text-muted">رقم المنتج: {{ product.code }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">{{ product.price }} ريال</h2>
+                        {% if product.stock > 0 %}
+                        <span class="badge bg-success">متوفر</span>
+                        {% else %}
+                        <span class="badge bg-danger">غير متوفر</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>الوصف</h5>
+                        <div class="product-description">
+                            {{ product.description|safe }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>معلومات إضافية</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>الفئة:</strong> {{ product.category.name }}</p>
+                                <p><strong>الشركة:</strong> {{ product.company.company_name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>تاريخ الإضافة:</strong> {{ product.created_at|date:"Y/m/d" }}</p>
+                                <p><strong>آخر تحديث:</strong> {{ product.updated_at|date:"Y/m/d" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-actions mt-4">
+                        {% if request.user.is_authenticated and request.user.user_type == 'customer' %}
+                            <button class="btn btn-primary" onclick="addToCart({{ product.id }})">
+                                <i class="fas fa-shopping-cart"></i> {% trans "إضافة إلى السلة" %}
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3>منتجات ذات صلة</h3>
+            <div class="row row-cols-1 row-cols-md-4 g-4">
+                {% for related_product in related_products %}
+                <div class="col">
+                    <div class="card h-100">
+                        {% if related_product.image %}
+                        <img src="{{ related_product.image.url }}" class="card-img-top" alt="{{ related_product.name }}">
+                        {% else %}
+                        <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="No image">
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ related_product.name }}</h5>
+                            <p class="card-text text-muted">{{ related_product.description|truncatechars:100 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 mb-0">{{ related_product.price }} ريال</span>
+                                {% if related_product.stock > 0 %}
+                                <span class="badge bg-success">متوفر</span>
+                                {% else %}
+                                <span class="badge bg-danger">غير متوفر</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'product_catalog:product_detail' related_product.pk %}" class="btn btn-primary w-100">
+                                عرض التفاصيل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addToCart(productId) {
+    fetch(`/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('تمت إضافة المنتج إلى السلة بنجاح');
+            updateCartCount();
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('حدث خطأ أثناء إضافة المنتج إلى السلة', 'error');
+    });
+}
+</script>
+{% endblock %}

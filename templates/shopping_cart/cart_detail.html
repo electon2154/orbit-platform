@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "سلة المشتريات" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">{% trans "سلة المشتريات" %}</h1>
+    
+    {% if cart %}
+        {% with companies=cart.get_items_by_company %}
+            
+            {% for company_id, company_data in companies.items %}
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4>
+                            <i class="fas fa-building me-2"></i>
+                            {{ company_data.company_name }}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "الصورة" %}</th>
+                                        <th>{% trans "المنتج" %}</th>
+                                        <th>{% trans "السعر" %}</th>
+                                        <th>{% trans "الكمية" %}</th>
+                                        <th>{% trans "المجموع" %}</th>
+                                        <th>{% trans "إزالة" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in company_data.items %}
+                                        <tr>
+                                            <td>
+                                                {% if item.image %}
+                                                    <img src="{{ item.image }}" alt="{{ item.name }}" class="img-thumbnail" style="width: 50px;">
+                                                {% else %}
+                                                    <img src="{% static 'images/no-image.png' %}" alt="No image" class="img-thumbnail" style="width: 50px;">
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.name }}</td>
+                                            <td>{{ item.price }} {% trans "ريال" %}</td>
+                                            <td>
+                                                <div class="input-group" style="width: 120px;">
+                                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') - 1)">-</button>
+                                                    <input type="number" class="form-control text-center" value="{{ item.quantity }}" min="1" onchange="updateCart('{{ item.product }}', this.value)">
+                                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') + 1)">+</button>
+                                                </div>
+                                            </td>
+                                            <td>{{ item.total_price }} {% trans "ريال" %}</td>
+                                            <td>
+                                                <button class="btn btn-danger btn-sm" onclick="removeFromCart('{{ item.product }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="4" class="text-end"><strong>{% trans "المجموع الفرعي" %}:</strong></td>
+                                        <td colspan="2"><strong>{{ company_data.total }} {% trans "ريال" %}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-primary" onclick="createOrderForCompany({{ company_id }})">
+                                <i class="fas fa-shopping-bag"></i> {% trans "إنشاء طلب من هذه الشركة" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Cart Summary -->
+            <div class="card mt-4 mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4>{% trans "ملخص السلة" %}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h5>{% trans "إجمالي المبلغ" %}:</h5>
+                        <h5>{{ cart.get_total_price }} {% trans "ريال" %}</h5>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-danger" onclick="clearCart()">
+                            <i class="fas fa-trash"></i> {% trans "تفريغ السلة" %}
+                        </button>
+                        <button class="btn btn-success" onclick="createAllOrders()">
+                            <i class="fas fa-shopping-bag"></i> {% trans "إنشاء جميع الطلبات" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% endwith %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> {% trans "السلة فارغة" %}
+        </div>
+        <a href="{% url 'product_catalog:product_list' %}" class="btn btn-primary">
+            <i class="fas fa-shopping-cart"></i> {% trans "متابعة التسوق" %}
+        </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCart(productId, quantity) {
+    if (quantity < 1) quantity = 1;
+    fetch(`/cart/update/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ quantity: quantity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            updateCartCount();
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message || 'حدث خطأ أثناء تحديث السلة', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('حدث خطأ أثناء تحديث السلة', 'danger');
+    });
+}
+
+function removeFromCart(productId) {
+    if (!confirm('هل أنت متأكد من إزالة هذا المنتج من السلة؟')) {
+        return;
+    }
+    
+    fetch(`/cart/remove/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            updateCartCount();
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message || 'حدث خطأ أثناء إزالة المنتج من السلة', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('حدث خطأ أثناء إزالة المنتج من السلة', 'danger');
+    });
+}
+
+function clearCart() {
+    if (!confirm('هل أنت متأكد من تفريغ السلة بالكامل؟')) {
+        return;
+    }
+
+    fetch('/cart/clear/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            updateCartCount();
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message || 'حدث خطأ أثناء تفريغ السلة', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('حدث خطأ أثناء تفريغ السلة', 'danger');
+    });
+}
+
+function createOrderForCompany(companyId) {
+    window.location.href = `{% url 'order_management:create_company_order' %}?company=${companyId}`;
+}
+
+function createAllOrders() {
+    window.location.href = '{% url "order_management:create_all_orders" %}';
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'success') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    // Add toast to container
+    toastContainer.appendChild(toastEl);
+
+    // Initialize and show toast
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    // Remove toast element after it's hidden
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
+
+// Function to update the cart count in the header
+function updateCartCount() {
+    fetch('/cart/count/', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const cartCountElement = document.querySelector('.cart-count');
+        if (cartCountElement) {
+            cartCountElement.textContent = data.count;
+            
+            // Add a small animation to highlight the change
+            cartCountElement.classList.add('animate-badge');
+            setTimeout(() => {
+                cartCountElement.classList.remove('animate-badge');
+            }, 500);
+        }
+    })
+    .catch(error => console.error('Error updating cart count:', error));
+}
+</script>
+{% endblock %}

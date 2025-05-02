@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "تحديث الملف الشخصي" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .location-field {
+        cursor: pointer;
+    }
+    .location-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+    .location-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 800px;
+    }
+    .location-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .location-header h5 {
+        margin: 0;
+    }
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+    .location-footer {
+        margin-top: 20px;
+        text-align: right;
+    }
+    #map {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{% trans "تحديث الملف الشخصي" %}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Company Information -->
+                        <div class="mb-3">
+                            <label for="id_company_name" class="form-label">{% trans 'اسم الشركة' %}</label>
+                            {{ form.company_name }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">{% trans 'صنف الشركة' %}</label>
+                            {{ form.category }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_website" class="form-label">{% trans 'الموقع الإلكتروني' %}</label>
+                            {{ form.website }}
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="mb-3">
+                            <label for="id_phone_number" class="form-label">{% trans 'رقم الهاتف' %}</label>
+                            {{ form.phone_number }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_city" class="form-label">{% trans 'المدينة' %}</label>
+                            {{ form.city }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_location" class="form-label">{% trans 'الموقع' %}</label>
+                            {{ form.location }}
+                            <button type="button" class="btn btn-outline-primary mt-2" onclick="showLocationPicker()">
+                                {% trans 'تحديد الموقع' %}
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_bio" class="form-label">{% trans 'نبذة تعريفية' %}</label>
+                            {{ form.bio }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_logo" class="form-label">{% trans 'الشعار' %}</label>
+                            {{ form.logo }}
+                        </div>
+
+                        <!-- Location Picker Overlay -->
+                        <div id="locationPicker" class="location-overlay">
+                            <div class="location-content">
+                                <div class="location-header">
+                                    <h5>{% trans "تحديد الموقع" %}</h5>
+                                    <button type="button" class="close-btn" onclick="hideLocationPicker()">&times;</button>
+                                </div>
+                                <div class="location-body">
+                                    <div id="map"></div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{% trans "خط العرض" %}</label>
+                                                <input type="number" class="form-control" id="latitude" step="0.000001" min="-90" max="90">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{% trans "خط الطول" %}</label>
+                                                <input type="number" class="form-control" id="longitude" step="0.000001" min="-180" max="180">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="location-footer">
+                                    <button type="button" class="btn btn-secondary me-2" onclick="hideLocationPicker()">{% trans "إلغاء" %}</button>
+                                    <button type="button" class="btn btn-primary" onclick="confirmLocation()">{% trans "تأكيد الموقع" %}</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">{% trans "حفظ التغييرات" %}</button>
+                            <a href="{% url 'user_accounts:password_change' %}" class="btn btn-warning">{% trans "تغيير كلمة المرور" %}</a>
+                            <a href="{% url 'user_accounts:company_dashboard' %}" class="btn btn-secondary">{% trans "إلغاء" %}</a>
+                            <button type="button" class="btn btn-danger" onclick="showDeleteConfirmation()">
+                                {% trans "حذف الحساب" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">{% trans "تأكيد حذف الحساب" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "هل أنت متأكد من رغبتك في حذف حسابك؟" %}</p>
+                <p class="text-danger">{% trans "تحذير: لا يمكن التراجع عن هذا الإجراء." %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                <form method="post" action="{% url 'user_accounts:delete_account' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">{% trans "تأكيد الحذف" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let map;
+let marker;
+let isMapInitialized = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event to location field
+    const locationField = document.querySelector('.location-field');
+    if (locationField) {
+        locationField.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLocationPicker();
+        });
+    }
+
+    // Initialize map with current location if available
+    if (locationField && locationField.value) {
+        const [lat, lng] = locationField.value.split(',').map(coord => parseFloat(coord.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+        }
+    }
+});
+
+function initializeMap() {
+    if (!isMapInitialized) {
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) return;
+
+        // Create map
+        map = L.map('map').setView([24.7136, 46.6753], 13);
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add click event to map
+        map.on('click', function(e) {
+            placeMarker(e.latlng);
+        });
+
+        // Add marker if location exists
+        const locationField = document.querySelector('.location-field');
+        if (locationField && locationField.value) {
+            const [lat, lng] = locationField.value.split(',').map(coord => parseFloat(coord.trim()));
+            if (!isNaN(lat) && !isNaN(lng)) {
+                placeMarker({ lat, lng });
+                map.setView([lat, lng], 13);
+            }
+        }
+
+        isMapInitialized = true;
+    }
+}
+
+function placeMarker(location) {
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    marker = L.marker(location, {
+        draggable: true
+    }).addTo(map);
+
+    // Update coordinates
+    document.getElementById('latitude').value = location.lat.toFixed(6);
+    document.getElementById('longitude').value = location.lng.toFixed(6);
+
+    // Add drag end listener
+    marker.on('dragend', function(e) {
+        const position = marker.getLatLng();
+        document.getElementById('latitude').value = position.lat.toFixed(6);
+        document.getElementById('longitude').value = position.lng.toFixed(6);
+    });
+}
+
+function showLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // Initialize map when overlay is shown
+    setTimeout(initializeMap, 100);
+}
+
+function hideLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    // Clean up map
+    if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+    }
+    if (map) {
+        map.remove();
+        map = null;
+    }
+    isMapInitialized = false;
+}
+
+function confirmLocation() {
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    
+    if (lat && lng) {
+        // Update the location field in the form
+        const locationField = document.querySelector('.location-field');
+        if (locationField) {
+            locationField.value = `${lat}, ${lng}`;
+        }
+        
+        // Hide the overlay
+        hideLocationPicker();
+    }
+}
+
+function showDeleteConfirmation() {
+    const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+    modal.show();
+}
+
+// Add Bootstrap classes to form fields
+document.querySelectorAll('input, select, textarea').forEach(function(element) {
+    if (!element.classList.contains('location-field')) {
+        element.classList.add('form-control');
+    }
+});
+
+// Add Bootstrap classes to file inputs
+document.querySelectorAll('input[type="file"]').forEach(function(element) {
+    element.classList.add('form-control');
+});
+</script>
+{% endblock %} 

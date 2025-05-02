@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "إنشاء طلب جديد" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .required-field label:after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        {% if action == 'إنشاء' %}
+                            {% trans "إنشاء طلب جديد" %}
+                        {% else %}
+                            {% trans "تحديث الطلب" %}
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <p>{{ field }}: {{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Store Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">{% trans "معلومات المتجر" %}</h5>
+                                <div class="mb-3 required-field">
+                                    <label for="store_name" class="form-label">{% trans "اسم المتجر" %}</label>
+                                    <input type="text" class="form-control" id="store_name" name="store_name" 
+                                           value="{{ form.store_name.value|default:'' }}" required>
+                                </div>
+                                <div class="mb-3 required-field">
+                                    <label for="store_city" class="form-label">{% trans "المدينة" %}</label>
+                                    <input type="text" class="form-control" id="store_city" name="store_city" 
+                                           value="{{ form.store_city.value|default:'' }}" required>
+                                </div>
+                                <div class="mb-3 required-field">
+                                    <label for="store_phone" class="form-label">{% trans "رقم الهاتف" %}</label>
+                                    <input type="tel" class="form-control" id="store_phone" name="store_phone" 
+                                           value="{{ form.store_phone.value|default:'' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-3">{% trans "موقع المتجر" %}</h5>
+                                <div id="map"></div>
+                                <input type="hidden" id="store_location" name="store_location" 
+                                       value="{{ form.store_location.value|default:'' }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">{% trans "ملاحظات" %}</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ form.notes.value|default:'' }}</textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'order_management:order_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right"></i> {% trans "عودة" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 
+                                {% if action == 'إنشاء' %}
+                                    {% trans "إنشاء الطلب" %}
+                                {% else %}
+                                    {% trans "حفظ التغييرات" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Google Maps JavaScript API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
+
+<script>
+let map;
+let marker;
+const defaultLocation = { lat: 24.697292, lng: 46.669839 }; // Default to Riyadh
+const translations = {{ MAP_TRANSLATIONS|safe }};
+
+function initMap() {
+    // Get stored location or use default
+    let initialLocation = defaultLocation;
+    const storedLocation = document.getElementById('store_location').value;
+    if (storedLocation) {
+        const [lat, lng] = storedLocation.split(',').map(coord => parseFloat(coord.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            initialLocation = { lat, lng };
+        }
+    }
+
+    // Initialize map
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: initialLocation,
+        zoom: 13
+    });
+
+    // Add search box
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.type = 'text';
+    input.placeholder = translations.search_location;
+    input.style.margin = '10px';
+    input.style.width = '250px';
+
+    const searchBox = new google.maps.places.SearchBox(input);
+    map.controls[google.maps.ControlPosition.TOP_RIGHT].push(input);
+
+    // Initialize marker
+    marker = new google.maps.Marker({
+        position: initialLocation,
+        map: map,
+        draggable: true,
+        title: translations.drag_marker
+    });
+
+    // Update hidden input when marker is dragged
+    marker.addListener('dragend', function() {
+        const position = marker.getPosition();
+        document.getElementById('store_location').value = `${position.lat()},${position.lng()}`;
+    });
+
+    // Listen for search box events
+    searchBox.addListener('places_changed', function() {
+        const places = searchBox.getPlaces();
+        if (places.length === 0) return;
+
+        const place = places[0];
+        if (!place.geometry || !place.geometry.location) return;
+
+        // Update map and marker
+        map.setCenter(place.geometry.location);
+        marker.setPosition(place.geometry.location);
+        document.getElementById('store_location').value = 
+            `${place.geometry.location.lat()},${place.geometry.location.lng()}`;
+    });
+
+    // Update marker position when map is clicked
+    map.addListener('click', function(e) {
+        marker.setPosition(e.latLng);
+        document.getElementById('store_location').value = `${e.latLng.lat()},${e.latLng.lng()}`;
+    });
+}
+
+// Initialize map when page loads
+window.addEventListener('load', initMap);
+</script>
+{% endblock %}

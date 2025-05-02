@@ -1,0 +1,153 @@
+<!-- Customer Details Modal -->
+<div class="modal fade" id="viewCustomerModal" tabindex="-1" aria-labelledby="viewCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewCustomerModalLabel">تفاصيل المتجر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <img id="customerAvatar" src="" alt="Customer Avatar" class="img-fluid rounded-circle mb-2" style="max-width: 150px;">
+                        <h4 id="customerName" class="mb-0"></h4>
+                        <p id="storeName" class="text-muted"></p>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="fw-bold">البريد الإلكتروني:</label>
+                                <p id="customerEmail"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold">رقم الهاتف:</label>
+                                <p id="customerPhone"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold">المدينة:</label>
+                                <p id="customerCity"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold">تاريخ التسجيل:</label>
+                                <p id="registrationDate"></p>
+                            </div>
+                            <div class="col-12">
+                                <label class="fw-bold">العنوان:</label>
+                                <p id="customerAddress"></p>
+                            </div>
+                            <div class="col-12">
+                                <div id="customerMap" style="height: 200px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 id="totalCustomerOrders">0</h3>
+                                <p class="mb-0">إجمالي الطلبات</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 id="totalSpent">0</h3>
+                                <p class="mb-0">إجمالي المشتريات</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 id="avgOrderValue">0</h3>
+                                <p class="mb-0">متوسط قيمة الطلب</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h6 class="mb-3">آخر الطلبات</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>التاريخ</th>
+                                    <th>القيمة</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerLatestOrders"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateCustomerModal(data) {
+    // Update customer information
+    document.getElementById('customerAvatar').src = data.avatar || '/static/images/default-avatar.png';
+    document.getElementById('customerName').textContent = data.full_name;
+    document.getElementById('storeName').textContent = data.store_name;
+    document.getElementById('customerEmail').textContent = data.user.email;
+    document.getElementById('customerPhone').textContent = data.phone;
+    document.getElementById('customerCity').textContent = data.city;
+    document.getElementById('customerAddress').textContent = data.address;
+    document.getElementById('registrationDate').textContent = new Date(data.user.date_joined).toLocaleDateString('ar-SA');
+
+    // Update statistics
+    document.getElementById('totalCustomerOrders').textContent = data.total_orders;
+    document.getElementById('totalSpent').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.total_spent);
+    document.getElementById('avgOrderValue').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.avg_order_value);
+
+    // Update latest orders table
+    const latestOrdersBody = document.getElementById('customerLatestOrders');
+    latestOrdersBody.innerHTML = '';
+    data.latest_orders.forEach(order => {
+        latestOrdersBody.innerHTML += `
+            <tr>
+                <td>#${order.id}</td>
+                <td>${new Date(order.created_at).toLocaleDateString('ar-SA')}</td>
+                <td>${new Intl.NumberFormat('ar-SA', {
+                    style: 'currency',
+                    currency: 'SAR'
+                }).format(order.total_amount)}</td>
+                <td>
+                    <span class="badge bg-${order.status_color}">
+                        ${order.status_display}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+
+    // Initialize map
+    if (data.latitude && data.longitude) {
+        const map = new google.maps.Map(document.getElementById('customerMap'), {
+            center: { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) },
+            zoom: 15
+        });
+        new google.maps.Marker({
+            position: { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) },
+            map: map,
+            title: data.store_name
+        });
+    }
+}
+</script> 

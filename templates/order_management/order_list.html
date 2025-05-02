@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "قائمة الطلبات" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{% trans "قائمة الطلبات" %}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "رقم الطلب" %}</th>
+                                    {% if request.user.user_type == 'company' %}
+                                    <th>{% trans "المتجر" %}</th>
+                                    {% else %}
+                                    <th>{% trans "الشركة" %}</th>
+                                    {% endif %}
+                                    <th>{% trans "التاريخ" %}</th>
+                                    <th>{% trans "المبلغ" %}</th>
+                                    <th>{% trans "الحالة" %}</th>
+                                    <th>{% trans "الإجراءات" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    {% if request.user.user_type == 'company' %}
+                                    <td>{{ order.customer.store_name }}</td>
+                                    {% else %}
+                                    <td>{{ order.items.first.product.company.name }}</td>
+                                    {% endif %}
+                                    <td>{{ order.created_at|date:"Y/m/d" }}</td>
+                                    <td>{{ order.total|floatformat:2 }} {% trans "دينار عراقي" %}</td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status_color }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'order_management:order_detail' order.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if request.user.user_type == 'company' %}
+                                            {% if order.status == 'pending' %}
+                                            <button class="btn btn-sm btn-success" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'accepted')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% elif order.status == 'accepted' %}
+                                            <button class="btn btn-sm btn-primary" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'processing')">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                            {% elif order.status == 'processing' %}
+                                            <button class="btn btn-sm btn-info" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'shipped')">
+                                                <i class="fas fa-shipping-fast"></i>
+                                            </button>
+                                            {% endif %}
+                                        {% endif %}
+
+                                        {% if request.user.user_type == 'customer' %}
+                                            {% if order.status == 'shipped' %}
+                                            <button class="btn btn-sm btn-success" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'delivered')">
+                                                <i class="fas fa-check-double"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">{% trans "لا توجد طلبات" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateOrderStatus(orderId, newStatus) {
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'order_management:order_status_update' 0 %}`.replace('0', orderId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update UI instead of page reload
+            const row = document.querySelector(`button[onclick*="updateOrderStatus(${orderId}"]`).closest('tr');
+            const statusCell = row.querySelector('td:nth-child(5)'); // The status cell is the 5th TD
+            
+            if (statusCell) {
+                statusCell.innerHTML = `
+                    <span class="badge bg-${data.status_color}">
+                        ${data.status}
+                    </span>
+                `;
+            }
+            
+            // Update action buttons based on new status
+            const actionsCell = row.querySelector('td:last-child'); // Last TD is the actions cell
+            if (actionsCell) {
+                // Keep the view button
+                const viewButton = actionsCell.querySelector('a.btn-info');
+                
+                let newButtons = '';
+                if (viewButton) {
+                    newButtons += viewButton.outerHTML;
+                }
+                
+                // Add appropriate buttons based on new status
+                {% if request.user.user_type == 'company' %}
+                if (newStatus === 'accepted') {
+                    newButtons += `
+                        <button class="btn btn-sm btn-primary" 
+                                onclick="updateOrderStatus(${orderId}, 'processing')">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    `;
+                } else if (newStatus === 'processing') {
+                    newButtons += `
+                        <button class="btn btn-sm btn-info" 
+                                onclick="updateOrderStatus(${orderId}, 'shipped')">
+                            <i class="fas fa-shipping-fast"></i>
+                        </button>
+                    `;
+                }
+                {% elif request.user.user_type == 'customer' %}
+                if (newStatus === 'shipped') {
+                    newButtons += `
+                        <button class="btn btn-sm btn-success" 
+                                onclick="updateOrderStatus(${orderId}, 'delivered')">
+                            <i class="fas fa-check-double"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="updateOrderStatus(${orderId}, 'rejected')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                }
+                {% endif %}
+                
+                actionsCell.innerHTML = newButtons;
+            }
+            
+            // Show toast notification
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('حدث خطأ أثناء تحديث حالة الطلب', 'error');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'success') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    // Add toast to container
+    toastContainer.appendChild(toastEl);
+
+    // Initialize and show toast
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    // Remove toast element after it's hidden
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
+</script>
+
+{% endblock %}

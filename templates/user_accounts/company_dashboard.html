@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "لوحة تحكم الشركة" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #baghdadMap {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+    #ordersMap {
+        height: 500px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .map-filters {
+        margin-bottom: 15px;
+    }
+    .map-filters .btn.active {
+        background-color: #198754;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        {% if user.company_profile.logo %}
+                            <img src="{{ user.company_profile.logo.url }}" 
+                                 alt="{{ user.company_profile.company_name }}" 
+                                 class="rounded-circle me-3" 
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'images/default-company.png' %}" 
+                                 alt="{{ user.company_profile.company_name }}" 
+                                 class="rounded-circle me-3" 
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                        {% endif %}
+                        <div>
+                            <h2 class="mb-1">{{ user.company_profile.company_name }}</h2>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>{{ user.company_profile.city }}
+                            </p>
+                            <div class="mt-2">
+                                <a href="{% url 'user_accounts:company_profile_update' %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-cog me-1"></i>{% trans "إعدادات الحساب" %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Map Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "خريطة الطلبات" %}</h5>
+                    <div class="map-filters">
+                        <button class="btn btn-sm btn-primary" onclick="filterOrders('pending')">
+                            <i class="fas fa-clock"></i> {% trans "قيد الانتظار" %}
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="filterOrders('processing')">
+                            <i class="fas fa-cog"></i> {% trans "قيد التجهيز" %}
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="filterOrders('shipped')">
+                            <i class="fas fa-shipping-fast"></i> {% trans "تم الشحن" %}
+                        </button>
+                        <button class="btn btn-sm btn-success active" onclick="filterOrders('all')">
+                            <i class="fas fa-list"></i> {% trans "الكل" %}
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="ordersMap"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "إجمالي المنتجات" %}</h5>
+                    <h2 class="mb-0">{{ total_products }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "إجمالي الطلبات" %}</h5>
+                    <h2 class="mb-0">{{ total_orders }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">{% trans "إجمالي الإيرادات" %}</h5>
+                    <h2 class="mb-0">{{ total_revenue|floatformat:2 }} {% trans "دينار عراقي" %}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "الطلبات الأخيرة" %}</h5>
+                    <a href="{% url 'order_management:order_list' %}" class="btn btn-sm btn-primary">
+                        {% trans "عرض الكل" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "رقم الطلب" %}</th>
+                                    <th>{% trans "المتجر" %}</th>
+                                    <th>{% trans "التاريخ" %}</th>
+                                    <th>{% trans "المبلغ" %}</th>
+                                    <th>{% trans "الحالة" %}</th>
+                                    <th>{% trans "الإجراءات" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.customer.store_name }}</td>
+                                    <td>{{ order.created_at|date:"Y/m/d" }}</td>
+                                    <td>{{ order.total|floatformat:2 }} {% trans "دينار عراقي" %}</td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status_color }}">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" 
+                                                onclick="viewOrderDetails({{ order.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">{% trans "لا توجد طلبات حديثة" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "المنتجات" %}</h5>
+                    <div>
+                        <a href="{% url 'product_catalog:product_create' %}" class="btn btn-sm btn-success me-2">
+                            <i class="fas fa-plus"></i> {% trans "إضافة منتج" %}
+                        </a>
+                        <a href="{% url 'product_catalog:product_list' %}" class="btn btn-sm btn-primary">
+                            {% trans "عرض الكل" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "الصورة" %}</th>
+                                    <th>{% trans "الاسم" %}</th>
+                                    <th>{% trans "الفئة" %}</th>
+                                    <th>{% trans "السعر" %}</th>
+                                    <th>{% trans "المخزون" %}</th>
+                                    <th>{% trans "الإجراءات" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in recent_products %}
+                                <tr data-product-id="{{ product.id }}">
+                                    <td>
+                                        {% if product.image %}
+                                            <img src="{{ product.image.url }}" 
+                                                 alt="{{ product.name }}"
+                                                 class="img-thumbnail"
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% else %}
+                                            <img src="{% static 'images/default-product.png' %}" 
+                                                 alt="{{ product.name }}"
+                                                 class="img-thumbnail"
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.category.name }}</td>
+                                    <td>{{ product.price|floatformat:2 }} {% trans "دينار عراقي" %}</td>
+                                    <td>{{ product.stock }}</td>
+                                    <td>
+                                        <a href="{% url 'product_catalog:product_update' product.id %}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="deleteProduct({{ product.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">{% trans "لا توجد منتجات" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "تفاصيل الطلب" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let ordersMap;
+let markers = [];
+let orders = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeOrdersMap();
+    fetchOrders();
+});
+
+function initializeOrdersMap() {
+    ordersMap = L.map('ordersMap').setView([33.3152, 44.3661], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(ordersMap);
+}
+
+function fetchOrders() {
+    const url = "{% url 'order_management:company_orders_api' %}";
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        orders = data;
+        showOrdersOnMap('all');
+    })
+    .catch(error => {
+        console.error('Error fetching orders:', error);
+        alert('حدث خطأ أثناء جلب بيانات الطلبات');
+    });
+}
+
+function showOrdersOnMap(filter) {
+    markers.forEach(marker => ordersMap.removeLayer(marker));
+    markers = [];
+
+    const filteredOrders = filter === 'all' ? orders : orders.filter(order => order.status === filter);
+
+    filteredOrders.forEach(order => {
+        if (!order.store_location) return;
+
+        const [lat, lng] = order.store_location.split(',').map(coord => parseFloat(coord));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            const detailUrl = `{% url 'order_management:order_detail' 999999 %}`.replace('999999', order.id);
+            const marker = L.marker([lat, lng])
+                .bindPopup(`
+                    <div class="text-center">
+                        <strong>${order.store_name}</strong><br>
+                        طلب رقم: ${order.order_number}<br>
+                        الحالة: <span class="badge bg-${order.status_color}">${order.status_display}</span><br>
+                        <a href="${detailUrl}" class="btn btn-sm btn-primary mt-2">
+                            {% trans "عرض التفاصيل" %}
+                        </a>
+                    </div>
+                `);
+            marker.addTo(ordersMap);
+            markers.push(marker);
+        }
+    });
+
+    if (markers.length === 0) {
+        alert('لا توجد طلبات في هذه الحالة');
+    }
+}
+
+function filterOrders(status) {
+    document.querySelectorAll('.map-filters .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.btn').classList.add('active');
+
+    showOrdersOnMap(status);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function viewOrderDetails(orderId) {
+    fetch(`/order-management/${orderId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        document.getElementById('orderDetailsContent').innerHTML = data.html;
+        modal.show();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function deleteProduct(productId) {
+    if (confirm('{% trans "هل أنت متأكد من حذف هذا المنتج؟" %}')) {
+        fetch(`{% url 'product_catalog:product_delete' 0 %}`.replace('0', productId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => Promise.reject(data));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Remove the product row from the table
+                const productRow = document.querySelector(`tr[data-product-id="${productId}"]`);
+                if (productRow) {
+                    productRow.remove();
+                    
+                    // Update the total products count in the stats card
+                    const totalProductsElement = document.querySelector('.card-body h2');
+                    if (totalProductsElement && totalProductsElement.textContent) {
+                        const currentCount = parseInt(totalProductsElement.textContent);
+                        if (!isNaN(currentCount)) {
+                            totalProductsElement.textContent = (currentCount - 1).toString();
+                        }
+                    }
+                    
+                    // Show success message
+                    showToast('{% trans "تم حذف المنتج بنجاح" %}', 'success');
+                    
+                    // If no products left, show the empty message
+                    const tbody = document.querySelector('table tbody');
+                    if (tbody && !tbody.querySelector('tr[data-product-id]')) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center">{% trans "لا توجد منتجات" %}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            } else {
+                showToast(data.message || '{% trans "حدث خطأ أثناء حذف المنتج" %}', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || '{% trans "حدث خطأ أثناء حذف المنتج" %}', 'error');
+        });
+    }
+}
+
+function showToast(message, type = 'success') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    // Add toast to container
+    toastContainer.appendChild(toastEl);
+
+    // Initialize and show toast
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    // Remove toast element after it's hidden
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
+</script>
+{% endblock %}

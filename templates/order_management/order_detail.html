@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #mapModal .modal-body {
+        height: 500px;
+        padding: 0;
+    }
+    #map {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block title %}{% trans "تفاصيل الطلب" %} #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{% trans "تفاصيل الطلب" %} #{{ order.order_number }}</h4>
+                    <div>
+                        <a href="{% url 'order_management:order_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right"></i> {% trans "العودة للقائمة" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Order Status -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">{% trans "حالة الطلب" %}</h6>
+                        <span class="badge bg-{{ order.status_color }} fs-6">
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
+
+                    <!-- Order Actions -->
+                    {% if is_company %}
+                        <div class="mb-4">
+                            {% if order.status == 'pending' %}
+                                <button class="btn btn-success" onclick="updateOrderStatus({{ order.id }}, 'accepted')">
+                                    <i class="fas fa-check"></i> {% trans "قبول الطلب" %}
+                                </button>
+                                <button class="btn btn-danger" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                    <i class="fas fa-times"></i> {% trans "رفض الطلب" %}
+                                </button>
+                            {% elif order.status == 'accepted' %}
+                                <button class="btn btn-primary" onclick="updateOrderStatus({{ order.id }}, 'processing')">
+                                    <i class="fas fa-cog"></i> {% trans "بدء التجهيز" %}
+                                </button>
+                            {% elif order.status == 'processing' %}
+                                <button class="btn btn-info" onclick="updateOrderStatus({{ order.id }}, 'shipped')">
+                                    <i class="fas fa-shipping-fast"></i> {% trans "شحن الطلب" %}
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if is_customer %}
+                        <div class="mb-4">
+                            {% if order.status == 'shipped' %}
+                                <button class="btn btn-success" onclick="updateOrderStatus({{ order.id }}, 'delivered')">
+                                    <i class="fas fa-check-double"></i> {% trans "تأكيد الاستلام" %}
+                                </button>
+                                <button class="btn btn-danger" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                    <i class="fas fa-times"></i> {% trans "رفض الطلب" %}
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Order Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">{% trans "معلومات المتجر" %}</h6>
+                            <p><strong>{% trans "اسم المتجر:" %}</strong> {{ order.customer.store_name }}</p>
+                            <p><strong>{% trans "المدينة:" %}</strong> {{ order.customer.city }}</p>
+                            <p><strong>{% trans "رقم الهاتف:" %}</strong> {{ order.customer.phone }}</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mapModal">
+                                <i class="fas fa-map-marker-alt"></i> {% trans "عرض موقع المتجر" %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="table-responsive mb-4">
+                        <h6 class="mb-3">{% trans "المنتجات" %}</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "المنتج" %}</th>
+                                    <th>{% trans "الكمية" %}</th>
+                                    <th>{% trans "السعر" %}</th>
+                                    <th>{% trans "المجموع" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image %}
+                                            <img src="{{ item.product.image.url }}" width="40" height="40" 
+                                                 class="rounded me-2" alt="{{ item.product.name }}">
+                                            {% endif %}
+                                            {{ item.product.name }}
+                                        </div>
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.price|floatformat:2 }} {% trans "دينار عراقي" %}</td>
+                                    <td>{{ item.total|floatformat:2 }} {% trans "دينار عراقي" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>{% trans "المجموع الفرعي:" %}</strong></td>
+                                    <td><strong>{{ order.subtotal|floatformat:2 }} {% trans "دينار عراقي" %}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>{% trans "الضريبة:" %}</strong></td>
+                                    <td><strong>{{ order.tax|floatformat:2 }} {% trans "دينار عراقي" %}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>{% trans "المجموع النهائي:" %}</strong></td>
+                                    <td><strong>{{ order.total|floatformat:2 }} {% trans "دينار عراقي" %}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {% if order.notes %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">{% trans "ملاحظات" %}</h6>
+                        <div class="p-3 bg-light rounded">
+                            {{ order.notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mapModalLabel">{% trans "موقع المتجر" %} - {{ order.store_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let map;
+let marker;
+const storeLocation = "{{ order.store_location }}".split(',');
+const lat = parseFloat(storeLocation[0]);
+const lng = parseFloat(storeLocation[1]);
+
+// Initialize map when modal is shown
+document.getElementById('mapModal').addEventListener('shown.bs.modal', function () {
+    if (!map) {
+        map = L.map('map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        marker = L.marker([lat, lng]).addTo(map)
+            .bindPopup("{{ order.store_name }}").openPopup();
+    }
+    // Force map to update its container size
+    map.invalidateSize();
+});
+
+function showToast(type, message) {
+    // إنشاء عنصر div للرسالة
+    const toastDiv = document.createElement('div');
+    toastDiv.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
+    toastDiv.style.zIndex = '1050';
+    toastDiv.textContent = message;
+
+    // إضافة زر إغلاق
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    closeButton.setAttribute('aria-label', 'Close');
+    toastDiv.appendChild(closeButton);
+
+    // إضافة الرسالة للصفحة
+    document.body.appendChild(toastDiv);
+
+    // إخفاء الرسالة بعد 3 ثواني
+    setTimeout(() => {
+        toastDiv.remove();
+    }, 3000);
+}
+
+function updateOrderStatus(orderId, newStatus) {
+    if (!confirm('هل أنت متأكد من تغيير حالة الطلب؟')) {
+        return;
+    }
+
+    fetch(`/orders/${orderId}/status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            location.reload();
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'حدث خطأ أثناء تحديث حالة الطلب');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

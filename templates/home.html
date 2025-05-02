@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}الرئيسية - Orbit Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero bg-primary text-white text-center py-5 rounded">
+    <div class="container">
+        <h1 class="display-4 mb-4">منصة Orbit للتجارة الإلكترونية</h1>
+        <p class="lead mb-4">اربط شركتك مع المتاجر أو ابحث عن موردين لمتجرك</p>
+        <div class="d-flex justify-content-center gap-3">
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'user_accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-light me-2">{% trans "تسجيل الخروج" %}</button>
+                </form>
+            {% else %}
+                <a href="{% url 'user_accounts:login' %}" class="btn btn-outline-light me-2">{% trans "تسجيل الدخول" %}</a>
+                <a href="{% url 'user_accounts:register' %}" class="btn btn-light">{% trans "تسجيل جديد" %}</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">مميزات المنصة</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-handshake fa-3x text-primary mb-3"></i>
+                        <h3 class="card-title h4">تواصل مباشر</h3>
+                        <p class="card-text">تواصل مباشر بين الشركات والمتاجر لتسهيل عملية البيع والشراء</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                        <h3 class="card-title h4">إدارة المبيعات</h3>
+                        <p class="card-text">نظام متكامل لإدارة المبيعات والطلبات والعروض</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                        <h3 class="card-title h4">خدمات مكانية</h3>
+                        <p class="card-text">خدمات مكانية متقدمة للبحث عن الشركات والمتاجر القريبة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Latest Products Section -->
+<section class="latest-products py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">أحدث المنتجات</h2>
+        <div class="row g-4">
+            {% for product in latest_products %}
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="No Image">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">{{ product.description|truncatewords:20 }}</p>
+                            <a href="{% url 'product_catalog:product_detail' product.pk %}" class="btn btn-primary">
+                                التفاصيل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center">
+                    <p>لا توجد منتجات حالياً</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Companies Section -->
+<section class="featured-companies py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">شركات مميزة</h2>
+        <div class="row g-4">
+            {% for company in featured_companies %}
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            {% if company.logo %}
+                                <img src="{{ company.logo.url }}" class="company-logo mb-3" alt="{{ company.company_name }}">
+                            {% else %}
+                                <img src="{% static 'images/no-logo.png' %}" class="company-logo mb-3" alt="No Logo">
+                            {% endif %}
+                            <h3 class="card-title h5">{{ company.company_name }}</h3>
+                            <p class="card-text">{{ company.bio|truncatewords:20 }}</p>
+                            <a href="{% url 'company_profiles:company_detail' company.pk %}" class="btn btn-primary">
+                                عرض الملف
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center">
+                    <p>لا توجد شركات حالياً</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+<section class="cta bg-primary text-white text-center py-5">
+    <div class="container">
+        <h2 class="mb-4">ابدأ الآن في تنمية أعمالك</h2>
+        <p class="lead mb-4">انضم إلى مجتمعنا من الشركات والمتاجر وابدأ في تحقيق النجاح</p>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'user_accounts:register' %}" class="btn btn-light btn-lg me-3">تسجيل جديد</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %} 

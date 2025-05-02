@@ -1,0 +1,40 @@
+{% extends 'registration/base_auth.html' %}
+
+{% block auth_title %}تسجيل الدخول{% endblock %}
+
+{% block auth_content %}
+<form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i> اسم المستخدم أو كلمة المرور غير صحيحة.
+    </div>
+    {% endif %}
+    
+    <div class="mb-3">
+        <label for="id_username" class="form-label">اسم المستخدم</label>
+        <input type="text" name="username" id="id_username" class="form-control" required>
+        <div class="invalid-feedback">يرجى إدخال اسم المستخدم</div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_password" class="form-label">كلمة المرور</label>
+        <input type="password" name="password" id="id_password" class="form-control" required>
+        <div class="invalid-feedback">يرجى إدخال كلمة المرور</div>
+    </div>
+    
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+        </button>
+    </div>
+    
+    <div class="text-center mt-3">
+        <a href="{% url 'user_accounts:password_reset' %}" class="text-decoration-none">نسيت كلمة المرور؟</a>
+    </div>
+    
+    <div class="text-center mt-3">
+        <p>ليس لديك حساب؟ <a href="{% url 'user_accounts:register' %}" class="text-decoration-none">سجل الآن</a></p>
+    </div>
+</form>
+{% endblock %} 

@@ -1,0 +1,186 @@
+<!-- Product Details Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-labelledby="viewProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewProductModalLabel">تفاصيل المنتج</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Product Image and Basic Info -->
+                    <div class="col-md-5">
+                        <div class="text-center mb-4">
+                            <img id="productImage" src="" alt="Product Image" class="img-fluid rounded" style="max-height: 300px;">
+                        </div>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4 id="productName" class="card-title mb-3"></h4>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 id="productPrice" class="mb-0"></h5>
+                                    <span id="productStock" class="badge"></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span id="productCategory"></span>
+                                    <span id="productStatus" class="badge"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="col-md-7">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">معلومات المنتج</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="fw-bold">الشركة المصنعة:</label>
+                                        <p id="companyName"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fw-bold">رقم المنتج:</label>
+                                        <p id="productCode"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fw-bold">تاريخ الإضافة:</label>
+                                        <p id="createdDate"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fw-bold">آخر تحديث:</label>
+                                        <p id="updatedDate"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Description -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">وصف المنتج</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="productDescription"></div>
+                            </div>
+                        </div>
+
+                        <!-- Product Specifications -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">المواصفات</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <tbody id="productSpecifications"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Statistics -->
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="totalOrders">0</h3>
+                                        <p class="mb-0">إجمالي الطلبات</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="totalQuantity">0</h3>
+                                        <p class="mb-0">إجمالي الكمية المباعة</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="totalRevenue">0</h3>
+                                        <p class="mb-0">إجمالي الإيرادات</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="addToCartBtn">
+                    <i class="fas fa-cart-plus"></i> إضافة إلى السلة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateProductModal(data) {
+    // Update product image and basic info
+    document.getElementById('productImage').src = data.image || '/static/images/no-image.png';
+    document.getElementById('productName').textContent = data.name;
+    document.getElementById('productPrice').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.price);
+    
+    const stockBadge = document.getElementById('productStock');
+    stockBadge.textContent = `${data.stock} متوفر`;
+    stockBadge.className = `badge ${data.stock > 0 ? 'bg-success' : 'bg-danger'}`;
+    
+    document.getElementById('productCategory').textContent = data.category;
+    
+    const statusBadge = document.getElementById('productStatus');
+    statusBadge.textContent = data.is_active ? 'نشط' : 'غير نشط';
+    statusBadge.className = `badge ${data.is_active ? 'bg-success' : 'bg-danger'}`;
+
+    // Update product details
+    document.getElementById('companyName').textContent = data.company.company_name;
+    document.getElementById('productCode').textContent = data.code;
+    document.getElementById('createdDate').textContent = new Date(data.created_at).toLocaleDateString('ar-SA');
+    document.getElementById('updatedDate').textContent = new Date(data.updated_at).toLocaleDateString('ar-SA');
+
+    // Update product description
+    document.getElementById('productDescription').innerHTML = data.description;
+
+    // Update product specifications
+    const specsBody = document.getElementById('productSpecifications');
+    specsBody.innerHTML = '';
+    data.specifications.forEach(spec => {
+        specsBody.innerHTML += `
+            <tr>
+                <th>${spec.name}</th>
+                <td>${spec.value}</td>
+            </tr>
+        `;
+    });
+
+    // Update product statistics
+    document.getElementById('totalOrders').textContent = data.total_orders;
+    document.getElementById('totalQuantity').textContent = data.total_quantity;
+    document.getElementById('totalRevenue').textContent = new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR'
+    }).format(data.total_revenue);
+
+    // Initialize add to cart button
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    if (data.stock > 0) {
+        addToCartBtn.disabled = false;
+        addToCartBtn.onclick = () => {
+            cart.addItem(data.id);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('viewProductModal'));
+            modal.hide();
+        };
+    } else {
+        addToCartBtn.disabled = true;
+        addToCartBtn.title = 'المنتج غير متوفر حالياً';
+    }
+}
+</script> 

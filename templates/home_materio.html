@@ -1,0 +1,213 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}الرئيسية - منصة B2B{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">الرئيسية</h4>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <h2 class="mb-3">مرحباً بك في منصة B2B للتجارة الإلكترونية</h2>
+                        <p class="mb-4">اربط شركتك مع المتاجر أو ابحث عن موردين لمتجرك عبر منصتنا المتكاملة</p>
+                        {% if not user.is_authenticated %}
+                        <div class="d-flex gap-3">
+                            <a href="{% url 'user_accounts:register' %}" class="btn btn-primary">تسجيل جديد</a>
+                            <a href="{% url 'user_accounts:login' %}" class="btn btn-outline-primary">تسجيل الدخول</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <img src="{% static 'images/welcome-image.svg' %}" alt="Welcome" class="img-fluid" style="max-height: 220px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mt-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">إجمالي المنتجات</h5>
+                <h2 class="stats-amount">{{ latest_products.count }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> 25%
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">عدد الشركات</h5>
+                <h2 class="stats-amount">{{ featured_companies.count }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> 18%
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">إجمالي المبيعات</h5>
+                <h2 class="stats-amount">23.4k</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> 42%
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">عدد المتاجر</h5>
+                <h2 class="stats-amount">1.8k</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> 22%
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Latest Products Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>أحدث المنتجات</h5>
+                <a href="{% url 'product_catalog:product_list' %}" class="btn btn-primary btn-sm">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    {% for product in latest_products %}
+                    <div class="col-md-3">
+                        <div class="card h-100 border-0 shadow-sm">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 180px; object-fit: cover;">
+                            {% else %}
+                            <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="No Image" style="height: 180px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body">
+                                <h6 class="card-title text-truncate">{{ product.name }}</h6>
+                                <p class="card-text small text-truncate-2">{{ product.description|truncatewords:10 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary">{{ product.price }} دينار</span>
+                                    <a href="{% url 'product_catalog:product_detail' product.pk %}" class="btn btn-sm btn-outline-primary">التفاصيل</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center">
+                        <p>لا توجد منتجات حالياً</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Companies Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>شركات مميزة</h5>
+                <a href="{% url 'company_profiles:company_list' %}" class="btn btn-primary btn-sm">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    {% for company in featured_companies %}
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                {% if company.logo %}
+                                <img src="{{ company.logo.url }}" class="rounded-circle mb-3" alt="{{ company.name }}" style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                <img src="{% static 'images/no-logo.png' %}" class="rounded-circle mb-3" alt="No Logo" style="width: 80px; height: 80px; object-fit: cover;">
+                                {% endif %}
+                                <h6 class="card-title">{{ company.name }}</h6>
+                                <p class="card-text small text-truncate-2">{{ company.description|default:''|truncatewords:15 }}</p>
+                                <a href="{% url 'company_profiles:company_detail' company.pk %}" class="btn btn-sm btn-outline-primary">عرض الملف</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center">
+                        <p>لا توجد شركات حالياً</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>مميزات المنصة</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-handshake text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5>تواصل مباشر</h5>
+                            <p class="small">تواصل مباشر بين الشركات والمتاجر لتسهيل عملية البيع والشراء</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-line text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5>إدارة المبيعات</h5>
+                            <p class="small">نظام متكامل لإدارة المبيعات والطلبات والعروض</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-map-marker-alt text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5>خدمات مكانية</h5>
+                            <p class="small">خدمات مكانية متقدمة للبحث عن الشركات والمتاجر القريبة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

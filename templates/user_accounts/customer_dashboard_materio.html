@@ -1,0 +1,244 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "لوحة التحكم" %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans "لوحة تحكم المتجر" %}</h4>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome & Stats Section -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h4>{% trans "مرحباً" %}, {{ customer.store_name }}</h4>
+                        <p class="text-muted">{% trans "هذه هي إحصائيات متجرك ونشاطاتك الأخيرة." %}</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="{% url 'product_catalog:product_list' %}" class="btn btn-primary">{% trans "تصفح المنتجات" %}</a>
+                        <a href="{% url 'shopping_cart:cart_detail' %}" class="btn btn-outline-primary">{% trans "سلة التسوق" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "إجمالي الطلبات" %}</h5>
+                <h2 class="stats-amount">{{ total_orders }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "مقارنة بالشهر الماضي" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "إجمالي المصروفات" %}</h5>
+                <h2 class="stats-amount">{{ total_spent }} {% trans "دينار" %}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "مقارنة بالشهر الماضي" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "المفضلة" %}</h5>
+                <h2 class="stats-amount">{{ wishlist_count }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "منتج" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "سلة التسوق" %}</h5>
+                <h2 class="stats-amount">{{ request.session.cart|length|default:0 }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "منتج" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "آخر الطلبات" %}</h5>
+                <a href="{% url 'order_management:order_list' %}" class="btn btn-primary btn-sm">{% trans "عرض الكل" %}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans "رقم الطلب" %}</th>
+                            <th>{% trans "التاريخ" %}</th>
+                            <th>{% trans "المبلغ" %}</th>
+                            <th>{% trans "الحالة" %}</th>
+                            <th>{% trans "الإجراءات" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td>#{{ order.order_number }}</td>
+                            <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                            <td>{{ order.total }} {% trans "دينار" %}</td>
+                            <td>
+                                <span class="badge bg-{{ order.status_color }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex">
+                                    <button class="btn btn-sm btn-primary me-2" onclick="viewOrderDetails({{ order.id }})">
+                                        <i class="fas fa-eye"></i> {% trans "عرض" %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">{% trans "لا توجد طلبات حتى الآن" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Store Information -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "معلومات المتجر" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">{% trans "اسم المتجر" %}</label>
+                    <p class="fw-bold">{{ customer.store_name }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">{% trans "رقم الهاتف" %}</label>
+                    <p class="fw-bold">{{ customer.phone }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">{% trans "العنوان" %}</label>
+                    <p class="fw-bold">{{ customer.address }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">{% trans "المدينة" %}</label>
+                    <p class="fw-bold">{{ customer.city }}</p>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'user_accounts:customer_profile_update' %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i> {% trans "تعديل المعلومات" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "الموقع" %}</h5>
+            </div>
+            <div class="card-body">
+                <div id="map" style="height: 250px; border-radius: 5px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderDetailsModalLabel">{% trans "تفاصيل الطلب" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "إغلاق" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<script>
+function viewOrderDetails(orderId) {
+    fetch(`/order-management/${orderId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        document.getElementById('orderDetailsContent').innerHTML = data.html;
+        modal.show();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Initialize the map if location is available
+document.addEventListener('DOMContentLoaded', function() {
+    const location = "{{ customer.location }}";
+    if (location) {
+        const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            const map = L.map('map').setView([lat, lng], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup("{{ customer.store_name }}")
+                .openPopup();
+        }
+    }
+});
+</script>
+{% endblock %} 

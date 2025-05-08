@@ -20,53 +20,53 @@
                         </h4>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
                                         <th>{% trans "الصورة" %}</th>
                                         <th>{% trans "المنتج" %}</th>
                                         <th>{% trans "السعر" %}</th>
                                         <th>{% trans "الكمية" %}</th>
                                         <th>{% trans "المجموع" %}</th>
                                         <th>{% trans "إزالة" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    </tr>
+                </thead>
+                <tbody>
                                     {% for item in company_data.items %}
-                                        <tr>
-                                            <td>
-                                                {% if item.image %}
-                                                    <img src="{{ item.image }}" alt="{{ item.name }}" class="img-thumbnail" style="width: 50px;">
-                                                {% else %}
-                                                    <img src="{% static 'images/no-image.png' %}" alt="No image" class="img-thumbnail" style="width: 50px;">
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ item.name }}</td>
+                        <tr>
+                            <td>
+                                {% if item.image %}
+                                    <img src="{{ item.image }}" alt="{{ item.name }}" class="img-thumbnail" style="width: 50px;">
+                                {% else %}
+                                    <img src="{% static 'images/no-image.png' %}" alt="No image" class="img-thumbnail" style="width: 50px;">
+                                {% endif %}
+                            </td>
+                            <td>{{ item.name }}</td>
                                             <td>{{ item.price }} {% trans "ريال" %}</td>
-                                            <td>
-                                                <div class="input-group" style="width: 120px;">
-                                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') - 1)">-</button>
-                                                    <input type="number" class="form-control text-center" value="{{ item.quantity }}" min="1" onchange="updateCart('{{ item.product }}', this.value)">
-                                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') + 1)">+</button>
-                                                </div>
-                                            </td>
+                            <td>
+                                <div class="input-group" style="width: 120px;">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') - 1)">-</button>
+                                    <input type="number" class="form-control text-center" value="{{ item.quantity }}" min="1" onchange="updateCart('{{ item.product }}', this.value)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') + 1)">+</button>
+                                </div>
+                            </td>
                                             <td>{{ item.total_price }} {% trans "ريال" %}</td>
-                                            <td>
-                                                <button class="btn btn-danger btn-sm" onclick="removeFromCart('{{ item.product }}')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="removeFromCart('{{ item.product }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
                                         <td colspan="4" class="text-end"><strong>{% trans "المجموع الفرعي" %}:</strong></td>
                                         <td colspan="2"><strong>{{ company_data.total }} {% trans "ريال" %}</strong></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                    </tr>
+                </tfoot>
+            </table>
                         </div>
                         
                         <div class="d-flex justify-content-end mt-3">
@@ -87,16 +87,16 @@
                     <div class="d-flex justify-content-between">
                         <h5>{% trans "إجمالي المبلغ" %}:</h5>
                         <h5>{{ cart.get_total_price }} {% trans "ريال" %}</h5>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <button class="btn btn-danger" onclick="clearCart()">
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-danger" onclick="clearCart()">
                             <i class="fas fa-trash"></i> {% trans "تفريغ السلة" %}
-                        </button>
+            </button>
                         <button class="btn btn-success" onclick="createAllOrders()">
                             <i class="fas fa-shopping-bag"></i> {% trans "إنشاء جميع الطلبات" %}
-                        </button>
-                    </div>
+            </button>
+        </div>
                 </div>
             </div>
         {% endwith %}
@@ -129,7 +129,7 @@ function updateCart(productId, quantity) {
             showToast(data.message, 'success');
             updateCartCount();
             setTimeout(() => {
-                location.reload();
+            location.reload();
             }, 1000);
         } else {
             showToast(data.message || 'حدث خطأ أثناء تحديث السلة', 'danger');
@@ -159,7 +159,7 @@ function removeFromCart(productId) {
             showToast(data.message, 'success');
             updateCartCount();
             setTimeout(() => {
-                location.reload();
+            location.reload();
             }, 1000);
         } else {
             showToast(data.message || 'حدث خطأ أثناء إزالة المنتج من السلة', 'danger');
@@ -208,7 +208,7 @@ function clearCart() {
 
 function createOrderForCompany(companyId) {
     window.location.href = `{% url 'order_management:create_company_order' %}?company=${companyId}`;
-}
+        }
 
 function createAllOrders() {
     window.location.href = '{% url "order_management:create_all_orders" %}';
@@ -283,7 +283,7 @@ function updateCartCount() {
             
             // Add a small animation to highlight the change
             cartCountElement.classList.add('animate-badge');
-            setTimeout(() => {
+    setTimeout(() => {
                 cartCountElement.classList.remove('animate-badge');
             }, 500);
         }

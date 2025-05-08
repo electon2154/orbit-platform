@@ -134,13 +134,13 @@ function viewOrderDetails(orderId) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-        document.getElementById('orderDetailsContent').innerHTML = data.html;
-        modal.show();
-    })
-    .catch(error => console.error('Error:', error));
+        .then(response => response.json())
+        .then(data => {
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            document.getElementById('orderDetailsContent').innerHTML = data.html;
+            modal.show();
+        })
+        .catch(error => console.error('Error:', error));
 }
 </script>
 {% endblock %} 

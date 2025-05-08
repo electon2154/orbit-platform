@@ -1,0 +1,377 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "قائمة الطلبات" %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans "قائمة الطلبات" %}</h4>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0">{% trans "قائمة الطلبات" %}</h5>
+        
+        <!-- Filters Dropdown -->
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-filter me-1"></i> {% trans "تصفية بالحالة" %}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
+                    <li><a class="dropdown-item" href="?">{% trans "جميع الطلبات" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=pending">{% trans "قيد الانتظار" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=accepted">{% trans "مقبول" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=processing">{% trans "قيد المعالجة" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=shipped">{% trans "تم الشحن" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=delivered">{% trans "تم التوصيل" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=rejected">{% trans "مرفوض" %}</a></li>
+                </ul>
+            </div>
+            
+            <!-- Date Range Filter (can be enhanced with datepicker) -->
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dateFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-calendar me-1"></i> {% trans "فترة زمنية" %}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dateFilterDropdown">
+                    <li><a class="dropdown-item" href="?">{% trans "جميع الفترات" %}</a></li>
+                    <li><a class="dropdown-item" href="?period=today">{% trans "اليوم" %}</a></li>
+                    <li><a class="dropdown-item" href="?period=week">{% trans "هذا الأسبوع" %}</a></li>
+                    <li><a class="dropdown-item" href="?period=month">{% trans "هذا الشهر" %}</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>{% trans "رقم الطلب" %}</th>
+                    {% if request.user.user_type == 'company' %}
+                    <th>{% trans "المتجر" %}</th>
+                    {% else %}
+                    <th>{% trans "الشركة" %}</th>
+                    {% endif %}
+                    <th>{% trans "التاريخ" %}</th>
+                    <th>{% trans "المبلغ" %}</th>
+                    <th>{% trans "الحالة" %}</th>
+                    <th>{% trans "الإجراءات" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">#{{ order.order_number }}</span>
+                    </td>
+                    {% if request.user.user_type == 'company' %}
+                    <td>{{ order.customer.store_name }}</td>
+                    {% else %}
+                    <td>{{ order.items.first.product.company.name }}</td>
+                    {% endif %}
+                    <td>{{ order.created_at|date:"Y/m/d" }}</td>
+                    <td>
+                        <span class="fw-semibold">{{ order.total|floatformat:2 }}</span> 
+                        <span class="text-muted">{% trans "دينار" %}</span>
+                    </td>
+                    <td>
+                        {% if order.status == 'pending' %}
+                            <span class="badge bg-warning">{{ order.get_status_display }}</span>
+                        {% elif order.status == 'accepted' %}
+                            <span class="badge bg-info">{{ order.get_status_display }}</span>
+                        {% elif order.status == 'processing' %}
+                            <span class="badge bg-primary">{{ order.get_status_display }}</span>
+                        {% elif order.status == 'shipped' %}
+                            <span class="badge bg-info">{{ order.get_status_display }}</span>
+                        {% elif order.status == 'delivered' %}
+                            <span class="badge bg-success">{{ order.get_status_display }}</span>
+                        {% elif order.status == 'rejected' %}
+                            <span class="badge bg-danger">{{ order.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm dropdown-toggle p-0" data-bs-toggle="dropdown" aria-expanded="false" id="actionDropdown-{{ order.id }}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown-{{ order.id }}">
+                                <li>
+                                    <a href="{% url 'order_management:order_detail' order.id %}" class="dropdown-item">
+                                        <i class="fas fa-eye me-1"></i> {% trans "عرض التفاصيل" %}
+                                    </a>
+                                </li>
+                                
+                                {% if request.user.user_type == 'company' %}
+                                    {% if order.status == 'pending' %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-success" onclick="updateOrderStatus({{ order.id }}, 'accepted')">
+                                            <i class="fas fa-check me-1"></i> {% trans "قبول الطلب" %}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item text-danger" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                            <i class="fas fa-times me-1"></i> {% trans "رفض الطلب" %}
+                                        </button>
+                                    </li>
+                                    {% elif order.status == 'accepted' %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-primary" onclick="updateOrderStatus({{ order.id }}, 'processing')">
+                                            <i class="fas fa-cog me-1"></i> {% trans "بدء المعالجة" %}
+                                        </button>
+                                    </li>
+                                    {% elif order.status == 'processing' %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-info" onclick="updateOrderStatus({{ order.id }}, 'shipped')">
+                                            <i class="fas fa-shipping-fast me-1"></i> {% trans "شحن الطلب" %}
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if request.user.user_type == 'customer' %}
+                                    {% if order.status == 'shipped' %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-success" onclick="updateOrderStatus({{ order.id }}, 'delivered')">
+                                            <i class="fas fa-check-double me-1"></i> {% trans "تأكيد الاستلام" %}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item text-danger" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                            <i class="fas fa-times me-1"></i> {% trans "رفض الطلب" %}
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fas fa-file-invoice text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted">{% trans "لا توجد طلبات" %}</h5>
+                        {% if request.user.user_type == 'customer' %}
+                        <p class="mt-3">
+                            <a href="{% url 'product_catalog:product_list' %}" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart me-1"></i> {% trans "تسوق الآن" %}
+                            </a>
+                        </p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if orders.has_other_pages %}
+    <div class="card-footer">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if orders.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ orders.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.period %}&period={{ request.GET.period }}{% endif %}" aria-label="Previous">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in orders.paginator.page_range %}
+                <li class="page-item {% if num == orders.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.period %}&period={{ request.GET.period }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if orders.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ orders.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.period %}&period={{ request.GET.period }}{% endif %}" aria-label="Next">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusUpdateModal" tabindex="-1" aria-labelledby="statusUpdateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusUpdateModalLabel">{% trans "تحديث حالة الطلب" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="statusUpdateMessage">{% trans "هل أنت متأكد من تغيير حالة الطلب؟" %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusUpdate">{% trans "تأكيد" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize Bootstrap dropdowns and other components when the document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all dropdowns
+    var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+    var dropdownList = dropdownElementList.map(function(dropdownToggleEl) {
+        return new bootstrap.Dropdown(dropdownToggleEl);
+    });
+    
+    // Initialize the status update modal
+    var statusUpdateModal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
+    
+    // Make the modal and confirm button available globally
+    window.statusUpdateModal = statusUpdateModal;
+    window.confirmStatusUpdateBtn = document.getElementById('confirmStatusUpdate');
+});
+
+// Variables to store the current order and status being updated
+let currentOrderId = null;
+let currentStatus = null;
+
+function updateOrderStatus(orderId, newStatus) {
+    // Store the order ID and status
+    currentOrderId = orderId;
+    currentStatus = newStatus;
+    
+    // Update the modal message based on the status
+    let statusText = '';
+    switch(newStatus) {
+        case 'accepted':
+            statusText = "{% trans 'قبول' %}";
+            break;
+        case 'processing':
+            statusText = "{% trans 'بدء معالجة' %}";
+            break;
+        case 'shipped':
+            statusText = "{% trans 'شحن' %}";
+            break;
+        case 'delivered':
+            statusText = "{% trans 'تأكيد استلام' %}";
+            break;
+        case 'rejected':
+            statusText = "{% trans 'رفض' %}";
+            break;
+        default:
+            statusText = "{% trans 'تحديث حالة' %}";
+    }
+    
+    document.getElementById('statusUpdateMessage').textContent = 
+        `{% trans 'هل أنت متأكد من' %} ${statusText} {% trans 'الطلب رقم' %} #${orderId}؟`;
+    
+    // Show the modal
+    window.statusUpdateModal.show();
+    
+    // Set up the confirm button click handler
+    window.confirmStatusUpdateBtn.onclick = function() {
+        submitStatusUpdate(currentOrderId, currentStatus);
+        window.statusUpdateModal.hide();
+    };
+}
+
+function submitStatusUpdate(orderId, newStatus) {
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'order_management:order_status_update' 0 %}`.replace('0', orderId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast('{% trans "تم تحديث حالة الطلب بنجاح" %}', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('{% trans "حدث خطأ أثناء تحديث حالة الطلب" %}', 'danger');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'success') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    // Add toast to container
+    toastContainer.appendChild(toastEl);
+
+    // Initialize and show toast
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    // Remove toast element after it's hidden
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
+</script>
+{% endblock %} 

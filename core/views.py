@@ -14,4 +14,5 @@ def home(request):
         'featured_companies': featured_companies,
     }
     
-    return render(request, 'home.html', context) 
+    # Use the new Materio template
+    return render(request, 'home_materio.html', context) 

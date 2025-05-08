@@ -1,0 +1,285 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "لوحة التحكم" %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans "لوحة تحكم المدير" %}</h4>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome & Stats Section -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h4>{% trans "مرحباً" %}, {{ request.user.username }}</h4>
+                        <p class="text-muted">{% trans "هذه هي إحصائيات النظام ونشاطاته الأخيرة." %}</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="{% url 'admin:index' %}" class="btn btn-primary">{% trans "الإدارة" %}</a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans "الصفحة الرئيسية" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "المستخدمين" %}</h5>
+                <h2 class="stats-amount">{{ total_users|default:0 }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "مستخدم" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "الشركات" %}</h5>
+                <h2 class="stats-amount">{{ total_companies|default:0 }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "شركة" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "المتاجر" %}</h5>
+                <h2 class="stats-amount">{{ total_customers|default:0 }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "متجر" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h5 class="stats-title">{% trans "المنتجات" %}</h5>
+                <h2 class="stats-amount">{{ total_products|default:0 }}</h2>
+                <div class="stats-growth positive">
+                    <i class="fas fa-arrow-up me-1"></i> {% trans "منتج" %}
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders & Recent Users -->
+<div class="row">
+    <div class="col-12 col-xl-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "آخر الطلبات" %}</h5>
+                <a href="{% url 'admin:order_management_order_changelist' %}" class="btn btn-primary btn-sm">{% trans "عرض الكل" %}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans "رقم الطلب" %}</th>
+                            <th>{% trans "المتجر" %}</th>
+                            <th>{% trans "التاريخ" %}</th>
+                            <th>{% trans "المبلغ" %}</th>
+                            <th>{% trans "الحالة" %}</th>
+                            <th>{% trans "الإجراءات" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td>#{{ order.order_number }}</td>
+                            <td>{{ order.customer.store_name }}</td>
+                            <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                            <td>{{ order.total }} {% trans "دينار" %}</td>
+                            <td>
+                                <span class="badge bg-{{ order.status_color }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'admin:order_management_order_change' order.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">{% trans "لا توجد طلبات حتى الآن" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "آخر المستخدمين" %}</h5>
+                <a href="{% url 'admin:user_accounts_customuser_changelist' %}" class="btn btn-primary btn-sm">{% trans "عرض الكل" %}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans "المستخدم" %}</th>
+                            <th>{% trans "النوع" %}</th>
+                            <th>{% trans "تاريخ التسجيل" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle me-2" width="36" height="36" alt="{{ user.username }}">
+                                    <div>
+                                        <h6 class="mb-0">{{ user.username }}</h6>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.user_type == 'company' %}
+                                <span class="badge bg-primary">{% trans "شركة" %}</span>
+                                {% elif user.user_type == 'customer' %}
+                                <span class="badge bg-success">{% trans "متجر" %}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ user.user_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">{% trans "لا يوجد مستخدمين حتى الآن" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "إحصائيات النظام" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{% trans "الطلبات المكتملة" %}</span>
+                        <span>{{ completed_orders|default:0 }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ completed_orders_percentage|default:0 }}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{% trans "الطلبات قيد التنفيذ" %}</span>
+                        <span>{{ processing_orders|default:0 }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: {{ processing_orders_percentage|default:0 }}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{% trans "الطلبات الملغاة" %}</span>
+                        <span>{{ cancelled_orders|default:0 }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-danger" style="width: {{ cancelled_orders_percentage|default:0 }}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{% trans "الشركات النشطة" %}</span>
+                        <span>{{ active_companies|default:0 }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: {{ active_companies_percentage|default:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "روابط سريعة" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a href="{% url 'admin:user_accounts_customuser_changelist' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "إدارة المستخدمين" %}</span>
+                            <i class="fas fa-users"></i>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'admin:product_catalog_product_changelist' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "إدارة المنتجات" %}</span>
+                            <i class="fas fa-box"></i>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'admin:order_management_order_changelist' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "إدارة الطلبات" %}</span>
+                            <i class="fas fa-file-invoice"></i>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'admin:company_profiles_company_changelist' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "إدارة الشركات" %}</span>
+                            <i class="fas fa-building"></i>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'admin:index' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "إعدادات النظام" %}</span>
+                            <i class="fas fa-cog"></i>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'user_accounts:password_change' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-between">
+                            <span>{% trans "تغيير كلمة المرور" %}</span>
+                            <i class="fas fa-key"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

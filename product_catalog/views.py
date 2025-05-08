@@ -31,7 +31,7 @@ def product_list(request):
         products = products.filter(company_id=company_id)
     
     # Search functionality
-    search_query = request.GET.get('search')
+    search_query = request.GET.get('q')
     if search_query:
         products = products.filter(name__icontains=search_query)
     
@@ -53,7 +53,8 @@ def product_list(request):
         'categories': categories,
         'companies': companies,
     }
-    return render(request, 'product_catalog/product_list.html', context)
+    # Use the new Materio-themed template
+    return render(request, 'product_catalog/product_list_materio.html', context)
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
@@ -106,7 +107,8 @@ def product_create(request):
             return redirect('user_accounts:company_dashboard')
     else:
         form = ProductForm()
-    return render(request, 'product_catalog/product_form.html', {'form': form, 'action': 'إنشاء'})
+    # Use the new Materio-themed template
+    return render(request, 'product_catalog/product_form_materio.html', {'form': form, 'action': 'إنشاء'})
 
 @login_required
 def product_update(request, pk):
@@ -132,7 +134,8 @@ def product_update(request, pk):
             return redirect('product_catalog:product_detail', pk=product.pk)
     else:
         form = ProductForm(instance=product)
-    return render(request, 'product_catalog/product_form.html', {'form': form, 'action': 'تحديث'})
+    # Use the new Materio-themed template
+    return render(request, 'product_catalog/product_form_materio.html', {'form': form, 'action': 'تحديث'})
 
 @login_required
 def product_delete(request, pk):
@@ -155,6 +158,5 @@ def product_delete(request, pk):
         # Delete the product
         product.delete()
         return JsonResponse({'success': True, 'message': 'تم حذف المنتج بنجاح'})
-        
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)

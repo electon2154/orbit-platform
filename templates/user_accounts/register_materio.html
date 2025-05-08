@@ -1,0 +1,353 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans 'تسجيل' %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans 'إنشاء حساب جديد' %}</h4>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .location-field {
+        cursor: pointer;
+    }
+    .location-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+    .location-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 800px;
+    }
+    .location-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .location-header h5 {
+        margin: 0;
+    }
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+    .location-footer {
+        margin-top: 20px;
+        text-align: right;
+    }
+    #map {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans 'إنشاء حساب جديد' %}</h5>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger alert-dismissible mb-3" role="alert">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div class="mb-1">{{ field.label }}: {{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <div class="mb-1">{{ error }}</div>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- User Type Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans 'نوع الحساب' %}</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_type" id="company_type" value="company" checked>
+                                <label class="form-check-label" for="company_type">
+                                    <i class="fas fa-building me-1"></i> {% trans 'شركة' %}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_type" id="customer_type" value="customer">
+                                <label class="form-check-label" for="customer_type">
+                                    <i class="fas fa-store me-1"></i> {% trans 'متجر' %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_username" class="form-label fw-bold">{% trans 'اسم المستخدم' %} <span class="text-danger">*</span></label>
+                            {{ form.username }}
+                            <small class="text-muted d-block mt-1">{% trans 'مطلوب. 150 حرف أو أقل. أحرف وأرقام و @/./+/-/_ فقط.' %}</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label fw-bold">{% trans 'البريد الإلكتروني' %} <span class="text-danger">*</span></label>
+                            {{ form.email }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password1" class="form-label fw-bold">{% trans 'كلمة المرور' %} <span class="text-danger">*</span></label>
+                            {{ form.password1 }}
+                            <small class="text-muted d-block mt-1">{% trans 'يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل وتتضمن أحرف وأرقام.' %}</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password2" class="form-label fw-bold">{% trans 'تأكيد كلمة المرور' %} <span class="text-danger">*</span></label>
+                            {{ form.password2 }}
+                        </div>
+
+                        <!-- Company/Customer Specific Fields -->
+                        <div class="col-12">
+                            <hr class="my-4">
+                            <h6 class="fw-bold mb-3">{% trans 'معلومات الملف الشخصي' %}</h6>
+                        </div>
+
+                        <div id="company_fields">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_company_name" class="form-label fw-bold">{% trans 'اسم الشركة' %} <span class="text-danger">*</span></label>
+                                {{ form.company_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_category" class="form-label fw-bold">{% trans 'صنف الشركة' %} <span class="text-danger">*</span></label>
+                                {{ form.category }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_website" class="form-label fw-bold">{% trans 'الموقع الإلكتروني' %}</label>
+                                {{ form.website }}
+                            </div>
+                        </div>
+
+                        <div id="customer_fields" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_store_name" class="form-label fw-bold">{% trans 'اسم المتجر' %} <span class="text-danger">*</span></label>
+                                {{ form.store_name }}
+                            </div>
+                        </div>
+
+                        <!-- Common Fields -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_phone_number" class="form-label fw-bold">{% trans 'رقم الهاتف' %} <span class="text-danger">*</span></label>
+                            {{ form.phone_number }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_city" class="form-label fw-bold">{% trans 'المدينة' %} <span class="text-danger">*</span></label>
+                            {{ form.city }}
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="id_location" class="form-label fw-bold">{% trans 'الموقع' %} <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                {{ form.location }}
+                                <button type="button" class="btn btn-primary" onclick="showLocationPicker()">
+                                    <i class="fas fa-map-marker-alt me-1"></i> {% trans 'تحديد الموقع' %}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="id_bio" class="form-label fw-bold">{% trans 'نبذة تعريفية' %}</label>
+                            {{ form.bio }}
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="id_logo" class="form-label fw-bold">{% trans 'الشعار' %}</label>
+                            {{ form.logo }}
+                            <small class="text-muted d-block mt-1">{% trans 'قم بتحميل شعار لشركتك/متجرك (اختياري)' %}</small>
+                        </div>
+
+                        <!-- Location Picker Overlay -->
+                        <div id="locationPicker" class="location-overlay">
+                            <div class="location-content">
+                                <div class="location-header">
+                                    <h5>{% trans "تحديد الموقع" %}</h5>
+                                    <button type="button" class="close-btn" onclick="hideLocationPicker()">&times;</button>
+                                </div>
+                                <div class="location-body">
+                                    <div id="map"></div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{% trans "خط العرض" %}</label>
+                                                <input type="number" class="form-control" id="latitude" step="0.000001" min="-90" max="90">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{% trans "خط الطول" %}</label>
+                                                <input type="number" class="form-control" id="longitude" step="0.000001" min="-180" max="180">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="location-footer">
+                                    <button type="button" class="btn btn-secondary me-2" onclick="hideLocationPicker()">{% trans "إلغاء" %}</button>
+                                    <button type="button" class="btn btn-primary" onclick="confirmLocation()">{% trans "تأكيد الموقع" %}</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus me-1"></i> {% trans 'إنشاء الحساب' %}
+                            </button>
+                        </div>
+                        
+                        <div class="col-12 mt-3 text-center">
+                            <p>{% trans 'لديك حساب بالفعل؟' %} <a href="{% url 'user_accounts:login' %}" class="fw-bold">{% trans 'تسجيل الدخول' %}</a></p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let map;
+let marker;
+let isMapInitialized = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const companyType = document.getElementById('company_type');
+    const customerType = document.getElementById('customer_type');
+    const companyFields = document.getElementById('company_fields');
+    const customerFields = document.getElementById('customer_fields');
+
+    function updateFormFields() {
+        if (companyType.checked) {
+            companyFields.style.display = 'block';
+            customerFields.style.display = 'none';
+        } else {
+            companyFields.style.display = 'none';
+            customerFields.style.display = 'block';
+        }
+    }
+
+    companyType.addEventListener('change', updateFormFields);
+    customerType.addEventListener('change', updateFormFields);
+    
+    // Initial state
+    updateFormFields();
+
+    // Add click event to location field
+    const locationField = document.querySelector('.location-field');
+    if (locationField) {
+        locationField.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLocationPicker();
+        });
+    }
+});
+
+function showLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'block';
+    
+    // Initialize map if not already initialized
+    if (!isMapInitialized) {
+        initMap();
+    }
+}
+
+function hideLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'none';
+}
+
+function initMap() {
+    map = L.map('map').setView([33.3152, 44.3661], 7); // Default view centered on Iraq
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add marker for the current location (if any)
+    const locationField = document.getElementById('id_location');
+    if (locationField && locationField.value) {
+        try {
+            const coords = locationField.value.split(',');
+            const lat = parseFloat(coords[0]);
+            const lng = parseFloat(coords[1]);
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+                marker = L.marker([lat, lng]).addTo(map);
+                map.setView([lat, lng], 13);
+                
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+            }
+        } catch (e) {
+            console.error("Error setting initial marker: ", e);
+        }
+    }
+    
+    // Add click event to map
+    map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        
+        // Update marker
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker([lat, lng]).addTo(map);
+    });
+    
+    isMapInitialized = true;
+}
+
+function confirmLocation() {
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    
+    if (lat && lng) {
+        document.getElementById('id_location').value = `${lat},${lng}`;
+        hideLocationPicker();
+    } else {
+        alert('يرجى تحديد الموقع على الخريطة');
+    }
+}
+</script>
+{% endblock %} 

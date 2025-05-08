@@ -43,9 +43,9 @@
                                  style="width: 80px; height: 80px; object-fit: cover;">
                         {% else %}
                             <img src="{% static 'images/default-company.png' %}" 
-                                 alt="{{ user.company_profile.company_name }}" 
-                                 class="rounded-circle me-3" 
-                                 style="width: 80px; height: 80px; object-fit: cover;">
+                             alt="{{ user.company_profile.company_name }}" 
+                             class="rounded-circle me-3" 
+                             style="width: 80px; height: 80px; object-fit: cover;">
                         {% endif %}
                         <div>
                             <h2 class="mb-1">{{ user.company_profile.company_name }}</h2>
@@ -214,9 +214,9 @@
                                                  style="width: 50px; height: 50px; object-fit: cover;">
                                         {% else %}
                                             <img src="{% static 'images/default-product.png' %}" 
-                                                 alt="{{ product.name }}"
-                                                 class="img-thumbnail"
-                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                             alt="{{ product.name }}"
+                                             class="img-thumbnail"
+                                             style="width: 50px; height: 50px; object-fit: cover;">
                                         {% endif %}
                                     </td>
                                     <td>{{ product.name }}</td>
@@ -374,13 +374,13 @@ function viewOrderDetails(orderId) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-        document.getElementById('orderDetailsContent').innerHTML = data.html;
-        modal.show();
-    })
-    .catch(error => console.error('Error:', error));
+        .then(response => response.json())
+        .then(data => {
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            document.getElementById('orderDetailsContent').innerHTML = data.html;
+            modal.show();
+        })
+        .catch(error => console.error('Error:', error));
 }
 
 function deleteProduct(productId) {

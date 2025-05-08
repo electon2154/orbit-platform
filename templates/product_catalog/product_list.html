@@ -12,17 +12,17 @@
             <div class="d-flex justify-content-between align-items-center">
                 <!-- Filters -->
                 <div class="d-flex gap-2">
-                    <!-- Category Filter -->
-                    <div class="dropdown">
-                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            التصنيفات
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="?">الكل</a></li>
-                            {% for category in categories %}
-                            <li><a class="dropdown-item" href="?category={{ category.id }}">{{ category.name }}</a></li>
-                            {% endfor %}
-                        </ul>
+                <!-- Category Filter -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        التصنيفات
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?">الكل</a></li>
+                        {% for category in categories %}
+                        <li><a class="dropdown-item" href="?category={{ category.id }}">{{ category.name }}</a></li>
+                        {% endfor %}
+                    </ul>
                     </div>
                     
                     {% if user.user_type != 'company' and companies %}
@@ -95,11 +95,11 @@
                             </button>
                         </div>
                     {% else %}
-                        <button class="btn btn-primary w-100" 
-                                onclick="addToCart({{ product.id }})"
-                                {% if product.stock <= 0 %}disabled{% endif %}>
-                            <i class="fas fa-cart-plus"></i> أضف إلى السلة
-                        </button>
+                    <button class="btn btn-primary w-100" 
+                            onclick="addToCart({{ product.id }})"
+                            {% if product.stock <= 0 %}disabled{% endif %}>
+                        <i class="fas fa-cart-plus"></i> أضف إلى السلة
+                    </button>
                     {% endif %}
                 </div>
             </div>

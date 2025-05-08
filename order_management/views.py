@@ -36,7 +36,34 @@ def order_list(request):
     else:
         orders = Order.objects.all().order_by('-created_at')
         
-    return render(request, 'order_management/order_list.html', {'orders': orders})
+    # Filter by status if specified
+    status = request.GET.get('status')
+    if status:
+        orders = orders.filter(status=status)
+    
+    # Filter by time period if specified
+    period = request.GET.get('period')
+    if period:
+        from django.utils import timezone
+        import datetime
+        if period == 'today':
+            today = timezone.now().date()
+            orders = orders.filter(created_at__date=today)
+        elif period == 'week':
+            start_of_week = timezone.now().date() - datetime.timedelta(days=7)
+            orders = orders.filter(created_at__date__gte=start_of_week)
+        elif period == 'month':
+            start_of_month = timezone.now().date() - datetime.timedelta(days=30)
+            orders = orders.filter(created_at__date__gte=start_of_month)
+    
+    # Paginate the orders
+    from django.core.paginator import Paginator
+    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    page_number = request.GET.get('page')
+    orders = paginator.get_page(page_number)
+    
+    # Use the Materio-themed template
+    return render(request, 'order_management/order_list_materio.html', {'orders': orders})
 
 @login_required
 def order_detail(request, pk):
@@ -155,7 +182,7 @@ def order_create(request):
     # Process POST requests as before
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
-        
+    
     try:
         customer = get_object_or_404(Customer, user=request.user)
         cart = Cart(request)

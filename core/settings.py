@@ -26,9 +26,15 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['orbit-platform-production-e049.up.railway.app']
+ALLOWED_HOSTS = ['orbit-platform-production-e049.up.railway.app',
+                 'localhost',
+                 '127.0.0.1',
+                 ]
 
-CSRF_TRUSTED_ORIGINS = ["https://orbit-platform-production-e049.up.railway.app"]
+CSRF_TRUSTED_ORIGINS = ["https://orbit-platform-production-e049.up.railway.app",
+                        'http://localhost:8000',
+                        'http://127.0.0.1:8000',
+                        ]
 
 # Application definition
 

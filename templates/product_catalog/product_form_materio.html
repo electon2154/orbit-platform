@@ -1,0 +1,176 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if form.instance.id %}
+        {% trans "تعديل منتج" %}
+    {% else %}
+        {% trans "إضافة منتج" %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    <h4 class="fw-bold py-2 mb-0">
+        {% if form.instance.id %}
+            {% trans "تعديل منتج" %}
+        {% else %}
+            {% trans "إضافة منتج جديد" %}
+        {% endif %}
+    </h4>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {% if form.instance.id %}
+                        {% trans "تعديل منتج" %}: {{ form.instance.name }}
+                    {% else %}
+                        {% trans "إضافة منتج جديد" %}
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger alert-dismissible mb-3" role="alert">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div class="mb-1">{{ field.label }}: {{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <div class="mb-1">{{ error }}</div>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Basic Information -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ form.name.label }} <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}
+                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label fw-bold">{{ form.category.label }} <span class="text-danger">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.help_text %}
+                                <small class="form-text text-muted">{{ form.category.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.price.id_for_label }}" class="form-label fw-bold">{{ form.price.label }} <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                {{ form.price }}
+                                <span class="input-group-text">{% trans "دينار" %}</span>
+                            </div>
+                            {% if form.price.help_text %}
+                                <small class="form-text text-muted">{{ form.price.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.stock.id_for_label }}" class="form-label fw-bold">{{ form.stock.label }} <span class="text-danger">*</span></label>
+                            {{ form.stock }}
+                            {% if form.stock.help_text %}
+                                <small class="form-text text-muted">{{ form.stock.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">{{ form.description.label }} <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                                <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Product Image -->
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label fw-bold">{{ form.image.label }}</label>
+                            
+                            {% if form.instance.image %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ form.instance.image.url }}" alt="{{ form.instance.name }}" class="img-thumbnail me-3" style="max-width: 100px;">
+                                    <div>
+                                        <p class="mb-1">{% trans "الصورة الحالية" %}</p>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="delete_image" name="delete_image">
+                                            <label class="form-check-label text-danger" for="delete_image">
+                                                {% trans "حذف الصورة الحالية" %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {{ form.image }}
+                            {% if form.image.help_text %}
+                                <small class="form-text text-muted">{{ form.image.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
+                                <a href="{% url 'product_catalog:product_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> {% trans "إلغاء" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>
+                                    {% if form.instance.id %}
+                                        {% trans "حفظ التغييرات" %}
+                                    {% else %}
+                                        {% trans "إضافة المنتج" %}
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add Bootstrap classes to form fields
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add form-control class to all input, select, textarea
+        document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(element) {
+            element.classList.add('form-control');
+        });
+        
+        // Add specific height to textarea
+        document.querySelectorAll('textarea').forEach(function(element) {
+            element.setAttribute('rows', '4');
+        });
+        
+        // Add form-control to file inputs
+        document.querySelectorAll('input[type="file"]').forEach(function(element) {
+            element.classList.add('form-control');
+        });
+        
+        // Add number attributes to number inputs
+        document.querySelectorAll('input[type="number"]').forEach(function(element) {
+            element.setAttribute('min', '0');
+            element.setAttribute('step', element.id === 'id_price' ? '0.01' : '1');
+        });
+    });
+</script>
+{% endblock %} 

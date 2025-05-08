@@ -15,7 +15,7 @@ def cart_detail(request):
         messages.error(request, 'عذراً، هذه الخدمة متاحة للمتاجر فقط')
         return redirect('home')
     cart = Cart(request)
-    return render(request, 'shopping_cart/cart_detail.html', {'cart': cart})
+    return render(request, 'shopping_cart/cart_detail_materio.html', {'cart': cart})
 
 @login_required
 @csrf_protect

@@ -1,0 +1,730 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans 'تسجيل' %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans 'إنشاء حساب جديد' %}</h4>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .step-wizard {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    /* Horizontal line connecting all steps */
+    .step-wizard:before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        right: 10%;
+        left: 10%;
+        height: 3px;
+        background-color: #dee2e6;
+        z-index: 0;
+    }
+
+    .step-wizard-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+    
+    /* Remove the individual lines since we now have a continuous line */
+    .step-wizard-item:not(:first-child):before {
+        content: none;
+    }
+
+    .step-wizard-item.active .step-wizard-icon,
+    .step-wizard-item.completed .step-wizard-icon {
+        background-color: #7367f0;
+        border-color: #7367f0;
+        color: #fff;
+    }
+
+    .step-wizard-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 3px solid #dee2e6;
+        color: #6c757d;
+        font-weight: bold;
+        margin: 0 auto 10px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-wizard-title {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .step-wizard-item.active .step-wizard-title,
+    .step-wizard-item.completed .step-wizard-title {
+        color: #7367f0;
+        font-weight: 600;
+    }
+    
+    .step-content {
+        display: none;
+    }
+    
+    .step-content.active {
+        display: block;
+    }
+    
+    .location-field {
+        cursor: pointer;
+    }
+    
+    .location-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+    
+    .location-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 800px;
+    }
+    
+    .location-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .location-header h5 {
+        margin: 0;
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+    
+    .location-footer {
+        margin-top: 20px;
+        text-align: right;
+    }
+    
+    #map {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-body">
+                <!-- Step Wizard -->
+                <div class="step-wizard">
+                    <div class="step-wizard-item active" data-step="1">
+                        <div class="step-wizard-icon">1</div>
+                        <p class="step-wizard-title">{% trans 'نوع الحساب' %}</p>
+                    </div>
+                    <div class="step-wizard-item" data-step="2">
+                        <div class="step-wizard-icon">2</div>
+                        <p class="step-wizard-title">{% trans 'البيانات الأساسية' %}</p>
+                    </div>
+                    <div class="step-wizard-item" data-step="3">
+                        <div class="step-wizard-icon">3</div>
+                        <p class="step-wizard-title">{% trans 'معلومات الملف' %}</p>
+                    </div>
+                    <div class="step-wizard-item" data-step="4">
+                        <div class="step-wizard-icon">4</div>
+                        <p class="step-wizard-title">{% trans 'الموقع' %}</p>
+                    </div>
+                </div>
+                
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible mb-3" role="alert">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <div class="mb-1">{{ field.label }}: {{ error }}</div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <div class="mb-1">{{ error }}</div>
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data" id="registerForm">
+                    {% csrf_token %}
+                    {{ form.user_type }}
+                    
+                    <!-- Step 1: Account Type -->
+                    <div class="step-content active" id="step1">
+                        <h5 class="mb-4">{% trans 'اختر نوع الحساب' %}</h5>
+                        
+                        <div class="row justify-content-center">
+                            <div class="col-md-5 mb-3">
+                                <div class="card account-type-card h-100 shadow-sm border" id="companyCard" onclick="selectAccountType('company')">
+                                    <div class="card-body text-center py-4">
+                                        <div class="mb-3">
+                                            <i class="fas fa-building fa-4x text-primary"></i>
+                                        </div>
+                                        <h5 class="mb-2">{% trans 'شركة' %}</h5>
+                                        <p class="text-muted">{% trans 'أنا شركة أريد عرض منتجاتي للبيع' %}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <div class="card account-type-card h-100 shadow-sm border" id="customerCard" onclick="selectAccountType('customer')">
+                                    <div class="card-body text-center py-4">
+                                        <div class="mb-3">
+                                            <i class="fas fa-store fa-4x text-primary"></i>
+                                        </div>
+                                        <h5 class="mb-2">{% trans 'متجر' %}</h5>
+                                        <p class="text-muted">{% trans 'أنا متجر أريد شراء منتجات للبيع' %}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="button" class="btn btn-primary" id="step1Next" onclick="goToStep(2)" disabled>
+                                {% trans 'التالي' %} <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Basic Information -->
+                    <div class="step-content" id="step2">
+                        <h5 class="mb-4">{% trans 'البيانات الأساسية' %}</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_username" class="form-label fw-bold">{% trans 'اسم المستخدم' %} <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                                <small class="text-muted d-block mt-1">{% trans 'مطلوب. 150 حرف أو أقل. أحرف وأرقام و @/./+/-/_ فقط.' %}</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="id_email" class="form-label fw-bold">{% trans 'البريد الإلكتروني' %} <span class="text-danger">*</span></label>
+                                {{ form.email }}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password1" class="form-label fw-bold">{% trans 'كلمة المرور' %} <span class="text-danger">*</span></label>
+                                {{ form.password1 }}
+                                <small class="text-muted d-block mt-1">{% trans 'يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل وتتضمن أحرف وأرقام.' %}</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password2" class="form-label fw-bold">{% trans 'تأكيد كلمة المرور' %} <span class="text-danger">*</span></label>
+                                {{ form.password2 }}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="goToStep(1)">
+                                <i class="fas fa-arrow-right me-1"></i> {% trans 'السابق' %}
+                            </button>
+                            <button type="button" class="btn btn-primary" id="step2Next" onclick="goToStep(3)">
+                                {% trans 'التالي' %} <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Profile Information -->
+                    <div class="step-content" id="step3">
+                        <h5 class="mb-4">{% trans 'معلومات الملف الشخصي' %}</h5>
+                        
+                        <div class="row">
+                            <!-- Company/Customer Specific Fields -->
+                            <div id="company_fields">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_company_name" class="form-label fw-bold">{% trans 'اسم الشركة' %} <span class="text-danger">*</span></label>
+                                    {{ form.company_name }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_category" class="form-label fw-bold">{% trans 'صنف الشركة' %} <span class="text-danger">*</span></label>
+                                    {{ form.category }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_website" class="form-label fw-bold">{% trans 'الموقع الإلكتروني' %}</label>
+                                    {{ form.website }}
+                                </div>
+                            </div>
+
+                            <div id="customer_fields" style="display: none;">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_store_name" class="form-label fw-bold">{% trans 'اسم المتجر' %} <span class="text-danger">*</span></label>
+                                    {{ form.store_name }}
+                                </div>
+                            </div>
+
+                            <!-- Common Fields -->
+                            <div class="col-md-6 mb-3">
+                                <label for="id_phone_number" class="form-label fw-bold">{% trans 'رقم الهاتف' %} <span class="text-danger">*</span></label>
+                                {{ form.phone_number }}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="id_city" class="form-label fw-bold">{% trans 'المدينة' %} <span class="text-danger">*</span></label>
+                                {{ form.city }}
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="id_bio" class="form-label fw-bold">{% trans 'نبذة تعريفية' %}</label>
+                                {{ form.bio }}
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="id_logo" class="form-label fw-bold">{% trans 'الشعار' %}</label>
+                                {{ form.logo }}
+                                <small class="text-muted d-block mt-1">{% trans 'قم بتحميل شعار لشركتك/متجرك (اختياري)' %}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="goToStep(2)">
+                                <i class="fas fa-arrow-right me-1"></i> {% trans 'السابق' %}
+                            </button>
+                            <button type="button" class="btn btn-primary" id="step3Next" onclick="goToStep(4)">
+                                {% trans 'التالي' %} <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 4: Location -->
+                    <div class="step-content" id="step4">
+                        <h5 class="mb-4">{% trans 'تحديد الموقع' %}</h5>
+                        
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    {% trans 'قم بتحديد موقعك على الخريطة لتسهيل عملية التوصيل والتعاملات' %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="id_location" class="form-label fw-bold">{% trans 'الموقع' %} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    {{ form.location }}
+                                    <button type="button" class="btn btn-primary" onclick="showLocationPicker()">
+                                        <i class="fas fa-map-marker-alt me-1"></i> {% trans 'تحديد الموقع' %}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div id="locationPreview" style="height: 300px; width: 100%; border-radius: 8px; display: none;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="goToStep(3)">
+                                <i class="fas fa-arrow-right me-1"></i> {% trans 'السابق' %}
+                            </button>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-user-plus me-1"></i> {% trans 'إنشاء الحساب' %}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Picker Overlay -->
+                    <div id="locationPicker" class="location-overlay">
+                        <div class="location-content">
+                            <div class="location-header">
+                                <h5>{% trans "تحديد الموقع" %}</h5>
+                                <button type="button" class="close-btn" onclick="hideLocationPicker()">&times;</button>
+                            </div>
+                            <div class="location-body">
+                                <div id="map"></div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">{% trans "خط العرض" %}</label>
+                                            <input type="number" class="form-control" id="latitude" step="0.000001" min="-90" max="90">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">{% trans "خط الطول" %}</label>
+                                            <input type="number" class="form-control" id="longitude" step="0.000001" min="-180" max="180">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="location-footer">
+                                <button type="button" class="btn btn-secondary me-2" onclick="hideLocationPicker()">{% trans "إلغاء" %}</button>
+                                <button type="button" class="btn btn-primary" onclick="confirmLocation()">{% trans "تأكيد الموقع" %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="col-12 mt-3 text-center">
+                    <p>{% trans 'لديك حساب بالفعل؟' %} <a href="{% url 'user_accounts:login' %}" class="fw-bold">{% trans 'تسجيل الدخول' %}</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+// Account type selection
+function selectAccountType(type) {
+    document.querySelector(`input[name="user_type"][value="${type}"]`).checked = true;
+    
+    if (type === 'company') {
+        document.getElementById('companyCard').classList.add('border-primary');
+        document.getElementById('customerCard').classList.remove('border-primary');
+        document.getElementById('company_fields').style.display = 'block';
+        document.getElementById('customer_fields').style.display = 'none';
+    } else {
+        document.getElementById('customerCard').classList.add('border-primary');
+        document.getElementById('companyCard').classList.remove('border-primary');
+        document.getElementById('company_fields').style.display = 'none';
+        document.getElementById('customer_fields').style.display = 'block';
+    }
+    
+    // Enable the next button
+    document.getElementById('step1Next').disabled = false;
+}
+
+// Step navigation
+function goToStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Show the target step
+    document.getElementById(`step${step}`).classList.add('active');
+    
+    // Update step wizard
+    document.querySelectorAll('.step-wizard-item').forEach(el => {
+        el.classList.remove('active', 'completed');
+    });
+    
+    // Mark current step as active and previous steps as completed
+    for (let i = 1; i <= 4; i++) {
+        const stepItem = document.querySelector(`.step-wizard-item[data-step="${i}"]`);
+        if (i < step) {
+            stepItem.classList.add('completed');
+        } else if (i === step) {
+            stepItem.classList.add('active');
+        }
+    }
+    
+    // Update the progress line based on the current step
+    updateProgressLine(step);
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+// Function to update the progress line
+function updateProgressLine(currentStep) {
+    // Calculate progress percentage based on current step (0-100%)
+    // For 4 steps: step 1 = 0%, step 2 = 33%, step 3 = 66%, step 4 = 100%
+    const progress = ((currentStep - 1) / 3) * 100;
+    
+    // Create or update the progress line
+    let progressLine = document.querySelector('.step-progress-line');
+    if (!progressLine) {
+        progressLine = document.createElement('div');
+        progressLine.className = 'step-progress-line';
+        
+        // Add the CSS for the progress line
+        const style = document.createElement('style');
+        style.textContent = `
+            .step-progress-line {
+                position: absolute;
+                top: 20px;
+                right: 10%;
+                height: 3px;
+                background-color: #7367f0;
+                z-index: 1;
+                transition: all 0.3s ease;
+                transform-origin: right center;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Add the progress line to the step wizard
+        document.querySelector('.step-wizard').appendChild(progressLine);
+    }
+    
+    // For RTL, we set a fixed width and use scaleX transform to grow from right to left
+    progressLine.style.width = '80%'; // Full width between the 10% margins
+    progressLine.style.transform = `scaleX(${progress / 100})`;
+}
+
+// Maps and location
+let map;
+let previewMap;
+let marker;
+let previewMarker;
+let isMapInitialized = false;
+let isPreviewMapInitialized = false;
+
+function showLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'block';
+    
+    // Initialize map if not already initialized
+    if (!isMapInitialized) {
+        initMap();
+    }
+}
+
+function hideLocationPicker() {
+    document.getElementById('locationPicker').style.display = 'none';
+}
+
+function initMap() {
+    map = L.map('map').setView([33.3152, 44.3661], 7); // Default view centered on Iraq
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add marker for the current location (if any)
+    const locationField = document.getElementById('id_location');
+    if (locationField && locationField.value) {
+        try {
+            const coords = locationField.value.split(',');
+            const lat = parseFloat(coords[0]);
+            const lng = parseFloat(coords[1]);
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+                marker = L.marker([lat, lng]).addTo(map);
+                map.setView([lat, lng], 13);
+                
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+            }
+        } catch (e) {
+            console.error("Error setting initial marker: ", e);
+        }
+    }
+    
+    // Add click event to map
+    map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        
+        // Update marker
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker([lat, lng]).addTo(map);
+    });
+    
+    isMapInitialized = true;
+}
+
+function initPreviewMap() {
+    const locationPreview = document.getElementById('locationPreview');
+    if (!locationPreview) return;
+    
+    locationPreview.style.display = 'block';
+    
+    if (!isPreviewMapInitialized) {
+        previewMap = L.map('locationPreview').setView([33.3152, 44.3661], 7);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(previewMap);
+        
+        isPreviewMapInitialized = true;
+    }
+    
+    // Update map with marker
+    const locationField = document.getElementById('id_location');
+    if (locationField && locationField.value) {
+        try {
+            const coords = locationField.value.split(',');
+            const lat = parseFloat(coords[0]);
+            const lng = parseFloat(coords[1]);
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+                if (previewMarker) {
+                    previewMap.removeLayer(previewMarker);
+                }
+                
+                previewMarker = L.marker([lat, lng]).addTo(previewMap);
+                previewMap.setView([lat, lng], 13);
+            }
+        } catch (e) {
+            console.error("Error updating preview map: ", e);
+        }
+    }
+    
+    // Refresh map size to ensure it renders correctly
+    setTimeout(() => {
+        if (previewMap) previewMap.invalidateSize();
+    }, 100);
+}
+
+function confirmLocation() {
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    
+    if (lat && lng) {
+        document.getElementById('id_location').value = `${lat},${lng}`;
+        hideLocationPicker();
+        
+        // Initialize or update the preview map
+        initPreviewMap();
+    } else {
+        alert('{% trans "يرجى تحديد الموقع على الخريطة" %}');
+    }
+}
+
+// Form field validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form-control class to form elements
+    document.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(function(element) {
+        element.classList.add('form-control');
+    });
+    
+    // Initialize account type cards
+    const companyCard = document.getElementById('companyCard');
+    const customerCard = document.getElementById('customerCard');
+    
+    companyCard.addEventListener('click', function() {
+        selectAccountType('company');
+    });
+    
+    customerCard.addEventListener('click', function() {
+        selectAccountType('customer');
+    });
+    
+    // Initialize progress line for step 1
+    updateProgressLine(1);
+    
+    // Handle location field click
+    const locationField = document.querySelector('.location-field');
+    if (locationField) {
+        locationField.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLocationPicker();
+        });
+    }
+    
+    // Validate required fields on step progression
+    document.getElementById('step2Next').addEventListener('click', function(e) {
+        const username = document.getElementById('id_username').value;
+        const email = document.getElementById('id_email').value;
+        const password1 = document.getElementById('id_password1').value;
+        const password2 = document.getElementById('id_password2').value;
+        
+        if (!username || !email || !password1 || !password2) {
+            e.preventDefault();
+            alert('{% trans "يرجى ملء جميع الحقول المطلوبة" %}');
+            return;
+        }
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('{% trans "كلمات المرور غير متطابقة" %}');
+            return;
+        }
+    });
+    
+    document.getElementById('step3Next').addEventListener('click', function(e) {
+        const userType = document.querySelector('input[name="user_type"]:checked').value;
+        
+        if (userType === 'company') {
+            const companyName = document.getElementById('id_company_name').value;
+            const category = document.getElementById('id_category').value;
+            
+            if (!companyName || !category) {
+                e.preventDefault();
+                alert('{% trans "يرجى ملء جميع الحقول المطلوبة" %}');
+                return;
+            }
+        } else {
+            const storeName = document.getElementById('id_store_name').value;
+            
+            if (!storeName) {
+                e.preventDefault();
+                alert('{% trans "يرجى ملء جميع الحقول المطلوبة" %}');
+                return;
+            }
+        }
+        
+        const phone = document.getElementById('id_phone_number').value;
+        const city = document.getElementById('id_city').value;
+        
+        if (!phone || !city) {
+            e.preventDefault();
+            alert('{% trans "يرجى ملء جميع الحقول المطلوبة" %}');
+            return;
+        }
+    });
+    
+    // Fix form submission
+    const registerForm = document.getElementById('registerForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    submitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Submit button clicked');
+        
+        // Check if location is set
+        const locationField = document.getElementById('id_location');
+        if (!locationField || !locationField.value) {
+            alert('{% trans "يرجى تحديد الموقع على الخريطة" %}');
+            return;
+        }
+        
+        console.log('Form data before submission:', {
+            userType: document.querySelector('input[name="user_type"]:checked')?.value,
+            username: document.getElementById('id_username').value,
+            email: document.getElementById('id_email').value,
+            location: locationField.value
+        });
+        
+        // Submit the form
+        registerForm.submit();
+    });
+});
+</script>
+{% endblock %} 

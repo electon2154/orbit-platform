@@ -64,7 +64,7 @@ class CustomerProfileForm(forms.ModelForm):
 class RegistrationForm(UserCreationForm):
     user_type = forms.ChoiceField(
         choices=[('company', _('شركة')), ('customer', _('متجر'))],
-        widget=forms.RadioSelect,
+        widget=forms.RadioSelect(attrs={'class': 'invisible'}),
         label=_('نوع الحساب')
     )
     
@@ -157,6 +157,21 @@ class RegistrationForm(UserCreationForm):
                 'unique': _('اسم المستخدم هذا مستخدم بالفعل.'),
             }
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # If the form is bound (POST request)
+        if args and args[0]:
+            user_type = args[0].get('user_type')
+            if user_type == 'company':
+                self.fields['company_name'].required = True
+                self.fields['category'].required = True
+                self.fields['store_name'].required = False
+            elif user_type == 'customer':
+                self.fields['store_name'].required = True
+                self.fields['company_name'].required = False
+                self.fields['category'].required = False
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")

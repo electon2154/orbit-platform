@@ -73,13 +73,13 @@ class RegistrationForm(UserCreationForm):
     company_name = forms.CharField(
         max_length=100,
         label=_('اسم الشركة'),
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     category = forms.ModelChoiceField(
         queryset=ProductCategory.objects.all(),
         label=_('صنف الشركة'),
-        required=False,
+        required=True,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     website = forms.URLField(
@@ -92,7 +92,7 @@ class RegistrationForm(UserCreationForm):
     store_name = forms.CharField(
         max_length=100,
         label=_('اسم المتجر'),
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
@@ -100,25 +100,28 @@ class RegistrationForm(UserCreationForm):
     phone_number = forms.CharField(
         max_length=20,
         label=_('رقم الهاتف'),
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     city = forms.CharField(
         max_length=100,
         label=_('المدينة'),
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     location = forms.CharField(
         max_length=255,
         label=_('الموقع'),
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control location-field'})
     )
     latitude = forms.FloatField(
-        required=False,
+        required=True,
         widget=forms.HiddenInput(),
         initial=0.0
     )
     longitude = forms.FloatField(
-        required=False,
+        required=True,
         widget=forms.HiddenInput(),
         initial=0.0
     )
@@ -128,15 +131,21 @@ class RegistrationForm(UserCreationForm):
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
     )
     logo = forms.ImageField(
-        required=False,
+        required=True,
         label=_('الشعار'),
         widget=forms.FileInput(attrs={'class': 'form-control'}),
-        help_text=_('قم بتحميل شعار لشركتك/متجرك (اختياري)')
+        help_text=_('قم بتحميل شعار لشركتك/متجرك')
+    )
+    baner = forms.ImageField(
+        required=True,
+        label=_('البنر'),
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        help_text=_('قم بتحميل بنر لشركتك/متجرك')
     )
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2', 'user_type', 'phone_number', 'city', 'location', 'bio', 'logo')
+        fields = ('username', 'email', 'password1', 'password2', 'user_type', 'phone_number', 'city', 'location', 'bio', 'logo', 'baner')
         labels = {
             'username': _('اسم المستخدم'),
             'email': _('البريد الإلكتروني'),
@@ -217,7 +226,9 @@ class RegistrationForm(UserCreationForm):
                 location=self.cleaned_data['location'],
                 city=self.cleaned_data['city'],
                 bio=self.cleaned_data['bio'],
-                website=self.cleaned_data['website']
+                website=self.cleaned_data['website'],
+                logo=self.cleaned_data['logo'],
+                baner=self.cleaned_data['baner']
             )
             if self.cleaned_data.get('logo'):
                 profile.logo = self.cleaned_data['logo']

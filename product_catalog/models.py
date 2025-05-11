@@ -18,7 +18,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=255, verbose_name='اسم المنتج')
-    code = models.CharField(max_length=50, unique=True, verbose_name='رمز المنتج')
+    code = models.CharField(max_length=50, unique=True, auto_created=True, verbose_name='رمز المنتج')
     description = RichTextField(verbose_name='الوصف')
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='السعر')
     stock = models.PositiveIntegerField(default=0, verbose_name='المخزون')

@@ -29,18 +29,16 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = [
-            'name', 'code', 'description', 'price', 'stock',
+            'name', 'description', 'price', 'stock',
             'image'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
         labels = {
             'name': 'اسم المنتج',
-            'code': 'رمز المنتج',
             'description': 'الوصف',
             'image': 'الصورة',
         } 

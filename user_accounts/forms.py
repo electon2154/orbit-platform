@@ -14,7 +14,7 @@ class CompanyProfileForm(forms.ModelForm):
 
     class Meta:
         model = CompanyProfile
-        fields = ('company_name', 'category', 'location', 'city', 'bio', 'logo', 'website')
+        fields = ('company_name', 'category', 'location', 'city', 'bio', 'logo', 'baner', 'website')
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4}),
             'location': forms.TextInput(attrs={'class': 'form-control location-field', 'readonly': 'readonly'}),
@@ -23,6 +23,7 @@ class CompanyProfileForm(forms.ModelForm):
             'website': forms.URLInput(attrs={'class': 'form-control'}),
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'baner': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

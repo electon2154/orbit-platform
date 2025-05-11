@@ -48,6 +48,7 @@ class CompanyProfile(models.Model):
     city = models.CharField(max_length=100, blank=True, verbose_name=_('City'))
     bio = models.TextField(blank=True, verbose_name=_('Bio'))
     logo = models.ImageField(upload_to='company_logos/', blank=True, verbose_name=_('Logo'))
+    baner = models.ImageField(upload_to='company_baners/', blank=True, verbose_name=_('Baner'))
     website = models.URLField(blank=True, verbose_name=_('Website'))
     
     class Meta:

@@ -151,11 +151,11 @@ function updateOrderModal(data) {
                 <td>${item.quantity}</td>
                 <td>${new Intl.NumberFormat('ar-SA', {
                     style: 'currency',
-                    currency: 'SAR'
+                    currency: 'IQD'
                 }).format(item.price)}</td>
                 <td>${new Intl.NumberFormat('ar-SA', {
                     style: 'currency',
-                    currency: 'SAR'
+                    currency: 'IQD'
                 }).format(item.total)}</td>
             </tr>
         `;
@@ -164,15 +164,15 @@ function updateOrderModal(data) {
     // Update totals
     document.getElementById('subtotal').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.subtotal);
     document.getElementById('tax').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.tax);
     document.getElementById('total').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.total);
 
     // Update order notes

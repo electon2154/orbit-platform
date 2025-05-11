@@ -13,17 +13,19 @@ from .models import CustomUser, CompanyProfile, CustomerProfile, Customer
 from company_profiles.models import Company
 from django.db import models
 from order_management.models import Order
+from django.db.models import Q
+from product_catalog.models import Category
 
 class CustomLoginView(LoginView):
     template_name = 'user_accounts/login_materio.html'
 
     def get_success_url(self):
-        user = self.request.user
-        if user.user_type == 'company':
+        # Redirect to appropriate dashboard based on user type
+        if self.request.user.user_type == 'company':
             return reverse_lazy('user_accounts:company_dashboard')
-        elif user.user_type == 'customer':
-            return reverse_lazy('user_accounts:customer_dashboard')
-        elif user.is_superuser:
+        elif self.request.user.user_type == 'customer':
+            return reverse_lazy('user_accounts:browse_companies')
+        elif self.request.user.is_superuser:
             return reverse_lazy('user_accounts:admin_dashboard')
         return reverse_lazy('home')
 
@@ -283,3 +285,72 @@ def delete_account(request):
         messages.success(request, _('تم حذف حسابك بنجاح'))
         return redirect('user_accounts:login')
     return redirect('user_accounts:company_profile_update')
+
+@login_required
+def browse_companies(request):
+    """View for customers to browse available companies"""
+    # Only customers should access this page
+    if request.user.user_type != 'customer':
+        messages.error(request, _('هذه الصفحة متاحة فقط لحسابات المتاجر.'))
+        return redirect('home')
+    
+    # Get all companies with related data
+    companies = CompanyProfile.objects.select_related('user', 'category').all()
+    
+    # Filter by category if specified
+    category_id = request.GET.get('category')
+    if category_id:
+        companies = companies.filter(category_id=category_id)
+    
+    # Search functionality
+    search_query = request.GET.get('q')
+    if search_query:
+        companies = companies.filter(
+            Q(company_name__icontains=search_query) | 
+            Q(bio__icontains=search_query)
+        )
+    
+    # Get all categories for filtering
+    categories = Category.objects.all()
+    
+    context = {
+        'companies': companies,
+        'categories': categories,
+    }
+    
+    return render(request, 'user_accounts/company_browse.html', context)
+
+# API endpoint for company search
+def search_companies(request):
+    """API endpoint for searching companies with suggestions"""
+    query = request.GET.get('q', '')
+    
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    
+    # Search in company names and descriptions
+    companies = CompanyProfile.objects.filter(
+        Q(company_name__icontains=query) | 
+        Q(bio__icontains=query)
+    ).select_related('category', 'user')[:10]  # Limit to 10 results
+    
+    # Format results for JSON response
+    results = []
+    for company in companies:
+        logo_url = None
+        if company.logo and hasattr(company.logo, 'url'):
+            logo_url = company.logo.url
+        
+        category_name = ''
+        if hasattr(company, 'category') and company.category:
+            category_name = company.category.name
+            
+        results.append({
+            'id': company.user.id,
+            'name': company.company_name,
+            'logo': logo_url,
+            'category_name': category_name,
+            'bio': company.bio[:100] if company.bio else '',
+        })
+    
+    return JsonResponse(results, safe=False)

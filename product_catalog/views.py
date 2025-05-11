@@ -5,9 +5,12 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 from .models import Product, Category, ProductCategory
 from .forms import ProductForm
-from user_accounts.models import CompanyProfile
+from user_accounts.models import CompanyProfile, CustomUser
 from company_profiles.models import Company
 from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.utils.translation import gettext as _
+from django.db.models import Q
 
 def product_list(request):
     # Filter products based on user type
@@ -160,3 +163,95 @@ def product_delete(request, pk):
         return JsonResponse({'success': True, 'message': 'تم حذف المنتج بنجاح'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@login_required
+def company_products(request, company_id):
+    """Display products from a specific company"""
+    try:
+        # Use the CustomUser model instead of User
+        company_user = CustomUser.objects.get(id=company_id, user_type='company')
+        company = CompanyProfile.objects.get(user=company_user)
+    except (CustomUser.DoesNotExist, CompanyProfile.DoesNotExist):
+        messages.error(request, _('الشركة غير موجودة'))
+        return redirect('user_accounts:browse_companies')
+    
+    # Get company's products - find the company object first
+    try:
+        company_obj = Company.objects.get(name=company.company_name)
+        products = Product.objects.filter(company=company_obj, is_active=True).order_by('-created_at')
+    except Company.DoesNotExist:
+        products = []
+        company_obj = None
+    
+    # Handle search functionality
+    search_query = request.GET.get('q')
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
+    
+    # Handle category filtering
+    category_id = request.GET.get('category')
+    if category_id:
+        products = products.filter(category_id=category_id)
+    
+    # Get categories for filtering
+    categories = Category.objects.all()
+    
+    context = {
+        'company': company,
+        'company_obj': company_obj,  # Pass the actual Company object for API calls
+        'products': products,
+        'categories': categories,
+    }
+    
+    return render(request, 'product_catalog/company_products.html', context)
+
+# API endpoint for company product search
+def search_company_products(request):
+    """API endpoint for searching products within a specific company with suggestions"""
+    query = request.GET.get('q', '')
+    company_id = request.GET.get('company_id')
+    
+    if len(query) < 2 or not company_id:
+        return JsonResponse([], safe=False)
+    
+    try:
+        # Log for debugging
+        print(f"Searching for products with query: '{query}' in company ID: {company_id}")
+        
+        # Get the company
+        company_obj = get_object_or_404(Company, id=company_id)
+        print(f"Found company: {company_obj.name}")
+        
+        # Search products by name and description for this company
+        products = Product.objects.filter(
+            Q(name__icontains=query) | 
+            Q(description__icontains=query),
+            company=company_obj,
+            is_active=True
+        )[:10]  # Limit to 10 results
+        
+        print(f"Found {products.count()} matching products")
+        
+        # Format results for JSON response
+        results = []
+        for product in products:
+            image_url = None
+            if product.image and hasattr(product.image, 'url'):
+                image_url = product.image.url
+                
+            results.append({
+                'id': product.id,
+                'name': product.name,
+                'image': image_url or '/static/images/default-product.png',
+                'price': float(product.price),
+                'category': product.category.name if product.category else '',
+                'description': product.description[:100] if product.description else '',
+            })
+        
+        return JsonResponse(results, safe=False)
+    except Exception as e:
+        print(f"Error in search_company_products: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=400)

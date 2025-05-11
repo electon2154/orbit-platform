@@ -43,7 +43,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ item.name }}</td>
-                                            <td>{{ item.price }} {% trans "ريال" %}</td>
+                                            <td>{{ item.price }} {% trans "دينار" %}</td>
                             <td>
                                 <div class="input-group" style="width: 120px;">
                                     <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') - 1)">-</button>
@@ -51,7 +51,7 @@
                                     <button class="btn btn-outline-secondary" type="button" onclick="updateCart('{{ item.product }}', parseInt('{{ item.quantity }}') + 1)">+</button>
                                 </div>
                             </td>
-                                            <td>{{ item.total_price }} {% trans "ريال" %}</td>
+                                            <td>{{ item.total_price }} {% trans "دينار" %}</td>
                             <td>
                                 <button class="btn btn-danger btn-sm" onclick="removeFromCart('{{ item.product }}')">
                                     <i class="fas fa-trash"></i>
@@ -63,7 +63,7 @@
                 <tfoot>
                     <tr>
                                         <td colspan="4" class="text-end"><strong>{% trans "المجموع الفرعي" %}:</strong></td>
-                                        <td colspan="2"><strong>{{ company_data.total }} {% trans "ريال" %}</strong></td>
+                                        <td colspan="2"><strong>{{ company_data.total }} {% trans "دينار" %}</strong></td>
                     </tr>
                 </tfoot>
             </table>
@@ -86,7 +86,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <h5>{% trans "إجمالي المبلغ" %}:</h5>
-                        <h5>{{ cart.get_total_price }} {% trans "ريال" %}</h5>
+                        <h5>{{ cart.get_total_price }} {% trans "دينار" %}</h5>
         </div>
         
         <div class="d-flex justify-content-between mt-4">

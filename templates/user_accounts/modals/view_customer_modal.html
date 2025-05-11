@@ -109,11 +109,11 @@ function updateCustomerModal(data) {
     document.getElementById('totalCustomerOrders').textContent = data.total_orders;
     document.getElementById('totalSpent').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.total_spent);
     document.getElementById('avgOrderValue').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.avg_order_value);
 
     // Update latest orders table
@@ -126,7 +126,7 @@ function updateCustomerModal(data) {
                 <td>${new Date(order.created_at).toLocaleDateString('ar-SA')}</td>
                 <td>${new Intl.NumberFormat('ar-SA', {
                     style: 'currency',
-                    currency: 'SAR'
+                    currency: 'IQD'
                 }).format(order.total_amount)}</td>
                 <td>
                     <span class="badge bg-${order.status_color}">

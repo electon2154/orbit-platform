@@ -127,7 +127,7 @@ function updateProductModal(data) {
     document.getElementById('productName').textContent = data.name;
     document.getElementById('productPrice').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.price);
     
     const stockBadge = document.getElementById('productStock');
@@ -166,7 +166,7 @@ function updateProductModal(data) {
     document.getElementById('totalQuantity').textContent = data.total_quantity;
     document.getElementById('totalRevenue').textContent = new Intl.NumberFormat('ar-SA', {
         style: 'currency',
-        currency: 'SAR'
+        currency: 'IQD'
     }).format(data.total_revenue);
 
     // Initialize add to cart button

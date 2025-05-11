@@ -58,6 +58,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{% url 'user_accounts:browse_companies' %}" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-building"></i></span>
+                            <span class="nav-text">تصفح الشركات</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{% url 'user_accounts:customer_dashboard' %}" class="nav-link">
                             <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
                             <span class="nav-text">لوحة التحكم</span>
@@ -155,11 +161,11 @@
                         <li class="nav-item dropdown position-relative">
                             <a href="#" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if user.user_type == 'company' %}
-                                <img src="{{ user.company_profile.logo.url|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="user-avatar">
-                                <span class="d-none d-md-inline ms-2">{{ user.username }}</span>
+                                <img src="{{ user.company_profile.logo.url|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="user-avatar shadow border">
+                                <!-- <span class="d-none d-md-inline ms-2">{{ user.username }}</span> -->
                                 {% elif user.user_type == 'customer' %}
-                                <img src="{{ user.customer_profile.logo.url|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="user-avatar">
-                                <span class="d-none d-md-inline ms-2">{{ user.username }}</span>
+                                <img src="{{ user.customer_profile.logo.url|default:'/static/images/default-avatar.png' }}" alt="{{ user.username }}" class="user-avatar shadow border">
+                                <!-- <span class="d-none d-md-inline ms-2">{{ user.username }}</span> -->
                                 {% endif %}
                             </a>
                             <div class="dropdown-menu dropdown-menu-end position-absolute">
@@ -170,6 +176,9 @@
                                 {% elif user.user_type == 'customer' %}
                                 <a class="dropdown-item" href="{% url 'user_accounts:customer_profile_update' %}">
                                     <i class="fas fa-user-cog ms-2"></i> الإعدادات
+                                </a>
+                                <a class="dropdown-item" href="{% url 'user_accounts:browse_companies' %}">
+                                    <i class="fas fa-building ms-2"></i> تصفح الشركات
                                 </a>
                                 {% endif %}
                                 <a class="dropdown-item" href="{% url 'user_accounts:password_change' %}">
@@ -203,6 +212,18 @@
                 {% block content %}{% endblock %}
             </div>
         </div>
+
+        <!-- <aside class="sidebar-right d-none d-xl-block">
+            <div class="sidebar-right-header">
+                <h5 class="text-center p-3">الشريط الجانبي --------</h5>
+            </div>
+            <div class="sidebar-right-body">
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <a href="{% url 'user_accounts:company_profile_update' %}">
+                            <i class="fas fa-user-cog"></i> الإعدادات
+        
+        </aside> -->
     </div>
 
     <!-- Bootstrap Bundle with Popper -->

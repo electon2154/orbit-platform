@@ -52,6 +52,7 @@ body {
   width: 60px;
 }
 
+
 .content-wrapper {
   margin-right: 260px;
   flex: 1;
@@ -381,3 +382,33 @@ body {
   display: block;
   width: 100%;
 } 
+
+.username, .password{
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.prefix-icon {
+  position: absolute;
+  left: 10px;
+  top: 55%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 1.25rem;
+  pointer-events: none;
+}
+
+#id_username {
+  border-radius: 2.375rem;
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  width: 100%;
+}
+
+#id_password{
+  border-radius: 2.375rem;
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  width: 100%;
+}

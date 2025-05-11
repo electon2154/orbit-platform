@@ -1,4 +1,4 @@
-{% extends 'base_materio.html' %}
+{% extends 'bbase.html' %}
 {% load static %}
 {% load i18n %}
 
@@ -310,6 +310,12 @@
                                 <label for="id_logo" class="form-label fw-bold">{% trans 'الشعار' %}</label>
                                 {{ form.logo }}
                                 <small class="text-muted d-block mt-1">{% trans 'قم بتحميل شعار لشركتك/متجرك (اختياري)' %}</small>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="id_baner" class="form-label fw-bold">{% trans 'البانر' %}</label>
+                                {{ form.baner }}
+                                <small class="text-muted d-block mt-1">{% trans 'قم بتحميل بانر لشركتك/متجرك (اختياري)' %}</small>
                             </div>
                         </div>
                         

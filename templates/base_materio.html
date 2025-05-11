@@ -40,12 +40,12 @@
                         <span class="nav-text">الرئيسية</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a href="{% url 'product_catalog:product_list' %}" class="nav-link">
                         <span class="nav-icon"><i class="fas fa-box"></i></span>
                         <span class="nav-text">المنتجات</span>
                     </a>
-                </li>
+                </li> -->
                 
                 {% if user.is_authenticated %}
                 
@@ -57,12 +57,12 @@
                             <span class="badge rounded-pill badge-primary cart-count">{{ request.session.cart|length|default:0 }}</span>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a href="{% url 'user_accounts:browse_companies' %}" class="nav-link">
                             <span class="nav-icon"><i class="fas fa-building"></i></span>
                             <span class="nav-text">تصفح الشركات</span>
                         </a>
-                    </li>
+                    </li> -->
                     <li class="nav-item">
                         <a href="{% url 'user_accounts:customer_dashboard' %}" class="nav-link">
                             <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>

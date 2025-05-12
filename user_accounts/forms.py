@@ -116,12 +116,12 @@ class RegistrationForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'form-control location-field'})
     )
     latitude = forms.FloatField(
-        required=True,
+        required=False,
         widget=forms.HiddenInput(),
         initial=0.0
     )
     longitude = forms.FloatField(
-        required=True,
+        required=False,
         widget=forms.HiddenInput(),
         initial=0.0
     )

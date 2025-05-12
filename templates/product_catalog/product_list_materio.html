@@ -73,9 +73,9 @@
         <div class="card h-100 overflow-hidden">
             <div class="position-relative">
                 {% if product.image %}
-                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: scale-down;">
                 {% else %}
-                <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="No image" style="height: 200px; object-fit: cover;">
+                <img src="{% static 'images/default-product.png' %}" class="card-img-top" alt="No image" style="height: 200px; object-fit: cover;">
                 {% endif %}
                 
                 {% if product.stock > 0 %}

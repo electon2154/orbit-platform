@@ -16,6 +16,7 @@ import uuid
 
 @login_required
 def order_list(request):
+    companies = []
     # Show only relevant orders based on user type
     if request.user.user_type == 'customer':
         # Get the customer instance for the current user
@@ -35,11 +36,25 @@ def order_list(request):
         orders = Order.objects.filter(id__in=order_ids).order_by('-created_at')
     else:
         orders = Order.objects.all().order_by('-created_at')
+        companies = Company.objects.all()
         
     # Filter by status if specified
     status = request.GET.get('status')
     if status:
         orders = orders.filter(status=status)
+    
+    # Filter by company if specified
+    company = request.GET.get('company')
+    if company:
+        company = get_object_or_404(Company, name=company)
+        
+        # Get products for this company
+        company_products = Product.objects.filter(company=company)
+        
+        # Get all orders that contain any of this company's products
+        order_items = OrderItem.objects.filter(product__in=company_products)
+        order_ids = order_items.values_list('order_id', flat=True).distinct()
+        orders = orders.filter(id__in=order_ids).order_by('-created_at')
     
     # Filter by time period if specified
     period = request.GET.get('period')
@@ -63,6 +78,12 @@ def order_list(request):
     orders = paginator.get_page(page_number)
     
     # Use the Materio-themed template
+    return render(request, 'order_management/order_list_materio.html', {'orders': orders, 'companies': companies})
+
+@login_required
+def order_list_by_company(request, pk):
+    company = get_object_or_404(Company, name=pk)
+    orders = Order.objects.filter(company=company)
     return render(request, 'order_management/order_list_materio.html', {'orders': orders})
 
 @login_required

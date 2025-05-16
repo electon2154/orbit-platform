@@ -1,0 +1,332 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ company.name }} | {% trans "تفاصيل الشركة" %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{{ company.name }}</h4>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .company-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        border-radius: 0.5rem;
+        border: 1px solid #eee;
+        padding: 0.5rem;
+    }
+    
+    .company-info-card {
+        height: 100%;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .map-container {
+        height: 300px;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .date-filter {
+        max-width: 150px;
+    }
+    
+    .order-status {
+        font-weight: 500;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .order-status-pending {
+        background-color: rgba(255, 171, 0, 0.15);
+        color: #faa700;
+    }
+    
+    .order-status-accepted {
+        background-color: rgba(105, 108, 255, 0.15);
+        color: var(--primary);
+    }
+    
+    .order-status-processing {
+        background-color: rgba(3, 195, 236, 0.15);
+        color: #03c3ec;
+    }
+    
+    .order-status-shipped {
+        background-color: rgba(113, 221, 55, 0.15);
+        color: #71dd37;
+    }
+    
+    .order-status-delivered {
+        background-color: rgba(40, 199, 111, 0.15);
+        color: #28c76f;
+    }
+    
+    .order-status-rejected {
+        background-color: rgba(255, 62, 29, 0.15);
+        color: #ff3e1d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 text-center mb-3 mb-md-0">
+                        <img src="{{ company.logo.url|default:'/static/images/default-logo.png' }}" alt="{{ company.name }}" class="company-logo">
+                    </div>
+                    <div class="col-md-10">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h3 class="mb-1">{{ company.name }}</h3>
+                                <p class="text-muted mb-2">{{ company.city }}</p>
+                            </div>
+                            <div>
+                                {% if company.is_active %}
+                                <span class="badge bg-success">{% trans "نشط" %}</span>
+                                {% else %}
+                                <span class="badge bg-danger">{% trans "غير نشط" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="info-label">{% trans "الوصف" %}</div>
+                            <p>{{ company.description }}</p>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <div class="info-label">{% trans "البريد الإلكتروني" %}</div>
+                                <p>{{ company.email }}</p>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="info-label">{% trans "رقم الهاتف" %}</div>
+                                <p>{{ company.phone }}</p>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="info-label">{% trans "تاريخ الإنشاء" %}</div>
+                                <p>{{ company.created_at|date:"Y-m-d" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'company_profiles:company_list' %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-arrow-right me-1"></i> {% trans "العودة للقائمة" %}
+                    </a>
+                    <a href="{% url 'company_profiles:company_update' company.id %}" class="btn btn-primary me-2">
+                        <i class="fas fa-edit me-1"></i> {% trans "تعديل" %}
+                    </a>
+                    <a href="{% url 'company_profiles:company_delete' company.id %}" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> {% trans "حذف" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Company Orders -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0">{% trans "طلبات الشركة" %}</h5>
+        
+        <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+            <!-- Status Filter -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-filter me-1"></i> 
+                    {% if status %}
+                        {% trans status %}
+                    {% else %}
+                        {% trans "جميع الحالات" %}
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
+                    <li><a class="dropdown-item {% if not status %}active{% endif %}" href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}">{% trans "جميع الحالات" %}</a></li>
+                    <li><a class="dropdown-item {% if status == '{pending}' %}active{% endif %}" href="?status=pending{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "قيد الانتظار" %}</a></li>
+                    <li><a class="dropdown-item {% if status == 'accepted' %}active{% endif %}" href="?status=accepted{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "مقبول" %}</a></li>
+                    <li><a class="dropdown-item {% if status == 'processing' %}active{% endif %}" href="?status=processing{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "قيد المعالجة" %}</a></li>
+                    <li><a class="dropdown-item {% if status == 'shipped' %}active{% endif %}" href="?status=shipped{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "تم الشحن" %}</a></li>
+                    <li><a class="dropdown-item {% if status == 'delivered' %}active{% endif %}" href="?status=delivered{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "تم التوصيل" %}</a></li>
+                    <li><a class="dropdown-item {% if status == 'rejected' %}active{% endif %}" href="?status=rejected{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{% trans "مرفوض" %}</a></li>
+                </ul>
+            </div>
+            
+            <!-- Date Filter Form -->
+            <form class="d-flex gap-2" method="get" id="dateFilterForm">
+                {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                <input type="date" name="start_date" class="form-control form-control-sm date-filter" placeholder="{% trans 'تاريخ البداية' %}" value="{{ start_date|default:'' }}">
+                <input type="date" name="end_date" class="form-control form-control-sm date-filter" placeholder="{% trans 'تاريخ النهاية' %}" value="{{ end_date|default:'' }}">
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "تطبيق" %}</button>
+                {% if start_date or end_date %}
+                <a href="?{% if status %}status={{ status }}{% endif %}" class="btn btn-sm btn-outline-secondary">{% trans "إلغاء" %}</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{% trans "رقم الطلب" %}</th>
+                    <th>{% trans "المتجر" %}</th>
+                    <th>{% trans "التاريخ" %}</th>
+                    <th>{% trans "المبلغ" %}</th>
+                    <th>{% trans "الحالة" %}</th>
+                    <th>{% trans "الإجراءات" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">#{{ order.order_number }}</span>
+                    </td>
+                    <td>{{ order.customer.store_name }}</td>
+                    <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                    <td>
+                        <span class="fw-semibold">{{ order.total|floatformat:2 }}</span> 
+                        <span class="text-muted">{% trans "دينار" %}</span>
+                    </td>
+                    <td>
+                        <span class="order-status order-status-{{ order.status }}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'order_management:order_detail' order.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-file-invoice fa-3x mb-3"></i>
+                            <h5>{% trans "لا توجد طلبات لهذه الشركة" %}</h5>
+                            {% if status or start_date or end_date %}
+                            <p>{% trans "حاول تغيير معايير البحث" %}</p>
+                            <a href="?{% if company_id %}company_id={{ company_id }}{% endif %}" class="btn btn-primary">
+                                <i class="fas fa-sync-alt me-1"></i> {% trans "عرض جميع الطلبات" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if orders.paginator %}
+    <div class="card-footer">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if orders.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ orders.previous_page_number }}{% if status %}&status={{ status }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="Previous">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in orders.paginator.page_range %}
+                <li class="page-item {% if num == orders.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if status %}&status={{ status }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if orders.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ orders.next_page_number }}{% if status %}&status={{ status }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="Next">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card company-info-card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "معلومات الإتصال" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="info-label">{% trans "العنوان" %}</div>
+                    <p>{{ company.address }}</p>
+                </div>
+                <div class="mb-3">
+                    <div class="info-label">{% trans "المدينة" %}</div>
+                    <p>{{ company.city }}</p>
+                </div>
+                <div class="mb-3">
+                    <div class="info-label">{% trans "البريد الإلكتروني" %}</div>
+                    <p>{{ company.email }}</p>
+                </div>
+                <div class="mb-3">
+                    <div class="info-label">{% trans "رقم الهاتف" %}</div>
+                    <p>{{ company.phone }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card company-info-card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "الموقع" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="map-container">
+                    <div id="companyMap" style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Map initialization code would go here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map if location coordinates are available
+        
+        // Date filter form submission
+        const startDateInput = document.querySelector('input[name="start_date"]');
+        const endDateInput = document.querySelector('input[name="end_date"]');
+        
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener('change', function() {
+                if (this.value && endDateInput.value) {
+                    document.getElementById('dateFilterForm').submit();
+                }
+            });
+            
+            endDateInput.addEventListener('change', function() {
+                if (this.value && startDateInput.value) {
+                    document.getElementById('dateFilterForm').submit();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,244 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if form.instance.id %}
+        {% trans "تعديل شركة" %} | {{ form.instance.name }}
+    {% else %}
+        {% trans "إضافة شركة جديدة" %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">
+    {% if form.instance.id %}
+        {% trans "تعديل شركة" %} | {{ form.instance.name }}
+    {% else %}
+        {% trans "إضافة شركة جديدة" %}
+    {% endif %}
+</h4>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-label {
+        font-weight: 500;
+    }
+    
+    .logo-preview {
+        width: 120px;
+        height: 120px;
+        border: 1px dashed #ccc;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    .logo-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .location-map {
+        height: 300px;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            {% if form.instance.id %}
+                {% trans "تعديل بيانات الشركة" %}
+            {% else %}
+                {% trans "إضافة شركة جديدة" %}
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <!-- Company Basic Info -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "المعلومات الأساسية" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.is_active.id_for_label }}" class="form-label">{{ form.is_active.label }}</label>
+                                <div>{{ form.is_active }}</div>
+                                {% if form.is_active.errors %}
+                                <div class="text-danger small mt-1">{{ form.is_active.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Info -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "معلومات الإتصال" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
+                                {{ form.city }}
+                                {% if form.city.errors %}
+                                <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Logo & Location -->
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "الشعار" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div class="logo-preview mx-auto">
+                                    {% if form.instance.logo %}
+                                    <img id="logoPreview" src="{{ form.instance.logo.url }}" alt="{{ form.instance.name }}">
+                                    {% else %}
+                                    <img id="logoPreview" src="{% static 'images/default-logo.png' %}" alt="Logo Preview">
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.logo.id_for_label }}" class="form-label">{{ form.logo.label }}</label>
+                                {{ form.logo }}
+                                {% if form.logo.errors %}
+                                <div class="text-danger small mt-1">{{ form.logo.errors.0 }}</div>
+                                {% endif %}
+                                <div class="text-muted small mt-1">{% trans "يفضل أن يكون الشعار بحجم 250×250 بكسل" %}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Location -->
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "الموقع" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.location.id_for_label }}" class="form-label">{{ form.location.label }}</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                <div class="text-danger small mt-1">{{ form.location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="location-map" id="locationMap"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end mt-4">
+                <a href="{% url 'company_profiles:company_list' %}" class="btn btn-outline-secondary me-2">
+                    {% trans "إلغاء" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if form.instance.id %}
+                        {% trans "حفظ التغييرات" %}
+                    {% else %}
+                        {% trans "إضافة الشركة" %}
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Logo preview
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoInput = document.getElementById('{{ form.logo.id_for_label }}');
+        const logoPreview = document.getElementById('logoPreview');
+        
+        if (logoInput) {
+            logoInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        logoPreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+        
+        // Map initialization code would go here
+    });
+</script>
+{% endblock %} 

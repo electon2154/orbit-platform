@@ -1,0 +1,105 @@
+{% extends 'base_materio.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "إدارة الشركات" %}{% endblock %}
+
+{% block page_title %}
+<h4 class="fw-bold py-2 mb-0">{% trans "قائمة الشركات" %}</h4>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .company-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        height: 100%;
+        border-radius: 0.7rem;
+    }
+    
+    .company-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .company-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    
+    .company-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .company-row:hover {
+        background-color: rgba(105, 108, 255, 0.08);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0">{% trans "إدارة الشركات" %}</h5>
+        
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="{% url 'company_profiles:company_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> {% trans "إضافة شركة جديدة" %}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>{% trans "الشعار" %}</th>
+                        <th>{% trans "اسم الشركة" %}</th>
+                        <th>{% trans "المدينة" %}</th>
+                        <th>{% trans "البريد الإلكتروني" %}</th>
+                        <th>{% trans "رقم الهاتف" %}</th>
+                        <th>{% trans "الحالة" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr class="company-row" onclick="location.href='{% url 'company_profiles:company_detail' company.id %}'">
+                        <td>
+                            <img src="{{ company.logo.url|default:'/static/images/default-logo.png' }}" alt="{{ company.name }}" class="company-logo">
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ company.name }}</div>
+                        </td>
+                        <td>{{ company.city }}</td>
+                        <td>{{ company.email }}</td>
+                        <td>{{ company.phone }}</td>
+                        <td>
+                            {% if company.is_active %}
+                            <span class="badge bg-success">{% trans "نشط" %}</span>
+                            {% else %}
+                            <span class="badge bg-danger">{% trans "غير نشط" %}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-building fa-3x mb-3"></i>
+                                <h5>{% trans "لا توجد شركات حتى الآن" %}</h5>
+                                <p>{% trans "قم بإضافة شركة جديدة للبدء" %}</p>
+                                <a href="{% url 'company_profiles:company_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i> {% trans "إضافة شركة" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

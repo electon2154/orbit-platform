@@ -109,6 +109,7 @@
         background-position: center;
         background-repeat: no-repeat;
         height: 300px;
+        min-height: 100px;
         border-radius: 0.7rem;
     }
 
@@ -149,9 +150,14 @@
         margin: 1rem;
     }
 
+    .card.shadow.mb-4 {
+            height: 90px;
+        }
+
     @media (max-width: 576px) {
         .horizontal-card {
             flex-direction: column;
+            height: 100px;
         }
         
         .horizontal-card .company-logo-container {
@@ -159,6 +165,14 @@
             min-width: 100%;
             border-left: none;
             border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-body {
+            height: 180px;
+        }
+
+        .card.shadow.mb-4 {
+            height: 165px;
         }
     }
 </style>
@@ -169,7 +183,7 @@
     <!-- Main Content -->
     <div class="col-lg-12">
         <!-- Search Bar -->
-        <div class="card shadow mb-4" style="height: 90px;">
+        <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-9">
@@ -221,7 +235,7 @@
         <!-- Companies Grid -->
         <div class="row" id="companiesContainer">
             {% for company in companies %}
-            <div class="col-12 mb-3 company-item" data-category="{{ company.category.id }}">
+            <div class="col-12 col-sm-11 mb-3 company-item mx-auto" data-category="{{ company.category.id }}">
                 <a href="{% url 'product_catalog:company_products' company.user.id %}" class="text-decoration-none">
                     <div class="card shadow company-card">
                         <div class="horizontal-card">

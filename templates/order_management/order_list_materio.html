@@ -15,6 +15,21 @@
         
         <!-- Filters Dropdown -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
+            <!-- Company Filter -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="companyFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-building me-1"></i> {% trans "تصفية بالشركة" %}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="companyFilterDropdown">
+                    <li><a class="dropdown-item" href="?">{% trans "جميع الشركات" %}</a></li>
+                    {% for company in companies %}
+                    <li><a class="dropdown-item" href="?company={{ company.name }}">{{ company.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            
+            <!-- Status Filter -->
             <div class="dropdown">
                 <button class="btn btn-outline-primary dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-filter me-1"></i> {% trans "تصفية بالحالة" %}

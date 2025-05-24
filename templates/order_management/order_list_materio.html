@@ -289,53 +289,72 @@ function updateOrderStatus(orderId, newStatus) {
         default:
             statusText = "{% trans 'تحديث حالة' %}";
     }
-    
-    document.getElementById('statusUpdateMessage').textContent = 
-        `{% trans 'هل أنت متأكد من' %} ${statusText} {% trans 'الطلب رقم' %} #${orderId}؟`;
+
+    if (newStatus == 'canceled') {
+        document.getElementById('statusUpdateMessage').innerHTML = `
+            <p>{% trans 'هل أنت متأكد من إلغاء الطلب؟' %}</p>
+            <p>{% trans 'الطلب رقم' %} #${orderId}</p>
+            <p>{% trans 'السبب' %}:</p>
+            <textarea id="cancelReason" class="form-control" rows="3"></textarea>
+        `;
+    } else {
+        document.getElementById('statusUpdateMessage').textContent = 
+            `{% trans 'هل أنت متأكد من' %} ${statusText} {% trans 'الطلب رقم' %} #${orderId}؟`;
+    }
     
     // Show the modal
     window.statusUpdateModal.show();
     
     // Set up the confirm button click handler
     window.confirmStatusUpdateBtn.onclick = function() {
-        submitStatusUpdate(currentOrderId, currentStatus);
+        if (currentStatus == 'canceled') {
+            const cancelReason = document.getElementById('cancelReason').value;
+            if (cancelReason.trim() === '') {
+                showToast('{% trans "يرجى إدخال السبب" %}', 'danger');
+                return;
+            }
+            submitStatusUpdate(currentOrderId, currentStatus, cancelReason);
+        } else {
+            submitStatusUpdate(currentOrderId, currentStatus);
+        }
         window.statusUpdateModal.hide();
     };
 }
 
-function submitStatusUpdate(orderId, newStatus) {
+function submitStatusUpdate(orderId, newStatus, cancelReason = "") {
     const csrftoken = getCookie('csrftoken');
-    
-    fetch(`{% url 'order_management:order_status_update' 0 %}`.replace('0', orderId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken,
-            'Accept': 'application/json'
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ status: newStatus })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showToast('{% trans "تم تحديث حالة الطلب بنجاح" %}', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        } else {
-            showToast(data.message, 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('{% trans "حدث خطأ أثناء تحديث حالة الطلب" %}', 'danger');
-    });
+
+        fetch(`{% url 'order_management:order_status_update' 0 %}`.replace('0', orderId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ status: newStatus, notes: cancelReason })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('{% trans "تم تحديث حالة الطلب بنجاح" %}', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('{% trans "حدث خطأ أثناء تحديث حالة الطلب" %}', 'danger');
+        });
+
 }
 
 function getCookie(name) {

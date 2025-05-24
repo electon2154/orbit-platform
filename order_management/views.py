@@ -112,6 +112,52 @@ def order_detail(request, pk):
                     </span>
                 </div>
 
+                <!-- Order Actions for Company -->
+                {% if is_company %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">إجراءات الطلب</h6>
+                        <div class="btn-group" role="group">
+                            {% if order.status == 'pending' %}
+                                <button class="btn btn-success" onclick="updateOrderStatus({{ order.id }}, 'accepted')">
+                                    <i class="fas fa-check me-1"></i> قبول الطلب
+                                </button>
+                                <button class="btn btn-danger ms-2" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                    <i class="fas fa-times me-1"></i> رفض الطلب
+                                </button>
+                            {% elif order.status == 'accepted' %}
+                                <button class="btn btn-primary" onclick="updateOrderStatus({{ order.id }}, 'processing')">
+                                    <i class="fas fa-cog me-1"></i> بدء التجهيز
+                                </button>
+                            {% elif order.status == 'processing' %}
+                                <button class="btn btn-info" onclick="updateOrderStatus({{ order.id }}, 'shipped')">
+                                    <i class="fas fa-shipping-fast me-1"></i> شحن الطلب
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Order Actions for Customer -->
+                {% if is_customer %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">إجراءات الطلب</h6>
+                        <div class="btn-group" role="group">
+                            {% if order.status == 'shipped' %}
+                                <button class="btn btn-success" onclick="updateOrderStatus({{ order.id }}, 'delivered')">
+                                    <i class="fas fa-check-double me-1"></i> تأكيد الاستلام
+                                </button>
+                                <button class="btn btn-danger ms-2" onclick="updateOrderStatus({{ order.id }}, 'rejected')">
+                                    <i class="fas fa-times me-1"></i> رفض الطلب
+                                </button>
+                            {% elif order.status == 'pending' %}
+                                <button class="btn btn-warning" onclick="updateOrderStatus({{ order.id }}, 'canceled')">
+                                    <i class="fas fa-ban me-1"></i> إلغاء الطلب
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Order Details -->
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -119,6 +165,11 @@ def order_detail(request, pk):
                         <p><strong>اسم المتجر:</strong> {{ order.customer.store_name }}</p>
                         <p><strong>المدينة:</strong> {{ order.store_city }}</p>
                         <p><strong>رقم الهاتف:</strong> {{ order.store_phone }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3">معلومات الطلب</h6>
+                        <p><strong>تاريخ الطلب:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</p>
+                        <p><strong>رقم الطلب:</strong> #{{ order.order_number }}</p>
                     </div>
                 </div>
 
@@ -168,6 +219,15 @@ def order_detail(request, pk):
                         </tfoot>
                     </table>
                 </div>
+
+                {% if order.notes %}
+                <div class="mb-4">
+                    <h6 class="mb-3">ملاحظات</h6>
+                    <div class="p-3 bg-light rounded">
+                        {{ order.notes }}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
         """
@@ -313,9 +373,11 @@ def order_status_update(request, pk):
         try:
             data = json.loads(request.body)
             new_status = data.get('status')
+            notes = data.get('notes')
             
             # التحقق من صلاحية الحالة الجديدة
             if new_status not in dict(Order.STATUS_CHOICES):
+                print(new_status)
                 return JsonResponse({
                     'success': False, 
                     'message': 'حالة الطلب غير صالحة'
@@ -330,6 +392,7 @@ def order_status_update(request, pk):
 
             # تحديث حالة الطلب
             order.status = new_status
+            order.notes = notes
             order.save()
             
             return JsonResponse({

@@ -14,7 +14,7 @@ class Order(models.Model, BaghdadTimestampMixin):
         ('shipped', 'تم الشحن'),
         ('delivered', 'تم التسليم'),
         ('rejected', 'مرفوض'),
-        ('cancelled', 'ملغي'),
+        ('canceled', 'ملغي'),
     )
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='orders', verbose_name='المتجر')
@@ -76,7 +76,8 @@ class Order(models.Model, BaghdadTimestampMixin):
         elif user.user_type == 'customer':
             # المتجر يمكنه فقط تأكيد التسليم أو إلغاء الطلب بعد الشحن
             allowed_transitions = {
-                'shipped': ['delivered', 'rejected']
+                'shipped': ['delivered', 'rejected'],
+                'pending': ['canceled']
             }
         else:
             return False

@@ -272,6 +272,10 @@ let ordersMap;
 let markers = [];
 let orders = [];
 
+// Global variables for status update
+let currentOrderId = null;
+let currentStatus = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeOrdersMap();
     fetchOrders();
@@ -381,6 +385,79 @@ function viewOrderDetails(orderId) {
             modal.show();
         })
         .catch(error => console.error('Error:', error));
+}
+
+// Function to handle order status updates from modal
+function updateOrderStatus(orderId, newStatus) {
+    // Store the order ID and status
+    currentOrderId = orderId;
+    currentStatus = newStatus;
+    
+    // Update the modal message based on the status
+    let statusText = '';
+    switch(newStatus) {
+        case 'accepted':
+            statusText = "قبول";
+            break;
+        case 'processing':
+            statusText = "بدء معالجة";
+            break;
+        case 'shipped':
+            statusText = "شحن";
+            break;
+        case 'delivered':
+            statusText = "تأكيد استلام";
+            break;
+        case 'rejected':
+            statusText = "رفض";
+            break;
+        case 'canceled':
+            statusText = "إلغاء";
+            break;
+        default:
+            statusText = "تحديث حالة";
+    }
+    
+    const confirmMessage = `هل أنت متأكد من ${statusText} الطلب رقم #${orderId}؟`;
+    
+    if (confirm(confirmMessage)) {
+        submitStatusUpdate(currentOrderId, currentStatus);
+    }
+}
+
+function submitStatusUpdate(orderId, newStatus) {
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/order-management/${orderId}/status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('تم تحديث حالة الطلب بنجاح');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            alert(data.message || 'حدث خطأ أثناء تحديث حالة الطلب');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء تحديث حالة الطلب');
+    });
 }
 
 function deleteProduct(productId) {

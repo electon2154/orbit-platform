@@ -5,6 +5,7 @@ from django.conf import settings
 from django_countries.fields import CountryField
 from location_field.models.plain import PlainLocationField
 from product_catalog.models import ProductCategory
+from core.utils import BaghdadTimestampMixin
 
 class CustomUser(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -78,7 +79,7 @@ class CustomerProfile(models.Model):
     def __str__(self):
         return self.store_name
 
-class Customer(models.Model):
+class Customer(models.Model, BaghdadTimestampMixin):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer')
     store_name = models.CharField(max_length=100, verbose_name='اسم المتجر')
     phone = models.CharField(max_length=20, verbose_name='رقم الهاتف')

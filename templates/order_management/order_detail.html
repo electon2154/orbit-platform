@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_materio.html' %}
 {% load static %}
 {% load i18n %}
 
@@ -163,97 +163,194 @@
         </div>
     </div>
 </div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusUpdateModal" tabindex="-1" aria-labelledby="statusUpdateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusUpdateModalLabel">{% trans "تحديث حالة الطلب" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="statusUpdateMessage">{% trans "هل أنت متأكد من تغيير حالة الطلب؟" %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusUpdate">{% trans "تأكيد" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-let map;
-let marker;
-const storeLocation = "{{ order.store_location }}".split(',');
-const lat = parseFloat(storeLocation[0]);
-const lng = parseFloat(storeLocation[1]);
+    document.addEventListener('DOMContentLoaded', function() {
+        let map;
+        let marker;
+        const storeLocation = "{{ order.store_location }}".split(',');
+        const lat = parseFloat(storeLocation[0]);
+        const lng = parseFloat(storeLocation[1]);
 
-// Initialize map when modal is shown
-document.getElementById('mapModal').addEventListener('shown.bs.modal', function () {
-    if (!map) {
-        map = L.map('map').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        // Initialize the status update modal
+        var statusUpdateModal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
         
-        marker = L.marker([lat, lng]).addTo(map)
-            .bindPopup("{{ order.store_name }}").openPopup();
-    }
-    // Force map to update its container size
-    map.invalidateSize();
-});
+        // Make the modal and confirm button available globally
+        window.statusUpdateModal = statusUpdateModal;
+        window.confirmStatusUpdateBtn = document.getElementById('confirmStatusUpdate');
 
-function showToast(type, message) {
-    // إنشاء عنصر div للرسالة
-    const toastDiv = document.createElement('div');
-    toastDiv.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
-    toastDiv.style.zIndex = '1050';
-    toastDiv.textContent = message;
-
-    // إضافة زر إغلاق
-    const closeButton = document.createElement('button');
-    closeButton.type = 'button';
-    closeButton.className = 'btn-close';
-    closeButton.setAttribute('data-bs-dismiss', 'alert');
-    closeButton.setAttribute('aria-label', 'Close');
-    toastDiv.appendChild(closeButton);
-
-    // إضافة الرسالة للصفحة
-    document.body.appendChild(toastDiv);
-
-    // إخفاء الرسالة بعد 3 ثواني
-    setTimeout(() => {
-        toastDiv.remove();
-    }, 3000);
-}
-
-function updateOrderStatus(orderId, newStatus) {
-    if (!confirm('هل أنت متأكد من تغيير حالة الطلب؟')) {
-        return;
-    }
-
-    fetch(`/orders/${orderId}/status/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({ status: newStatus })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('success', data.message);
-            location.reload();
-        } else {
-            showToast('error', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('error', 'حدث خطأ أثناء تحديث حالة الطلب');
     });
-}
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+    // Initialize map when modal is shown
+    document.getElementById('mapModal').addEventListener('shown.bs.modal', function () {
+            if (!map) {
+                map = L.map('map').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                
+                marker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup("{{ order.store_name }}").openPopup();
+            }
+            // Force map to update its container size
+            map.invalidateSize();
+        });
+
+    // Variables to store the current order and status being updated
+    let currentOrderId = null;
+    let currentStatus = null;
+
+    function updateOrderStatus(orderId, newStatus) {
+        // Store the order ID and status
+        currentOrderId = orderId;
+        currentStatus = newStatus;
+        
+        // Update the modal message based on the status
+        let statusText = '';
+        switch(newStatus) {
+            case 'accepted':
+                statusText = "{% trans 'قبول' %}";
                 break;
+            case 'processing':
+                statusText = "{% trans 'بدء معالجة' %}";
+                break;
+            case 'shipped':
+                statusText = "{% trans 'شحن' %}";
+                break;
+            case 'delivered':
+                statusText = "{% trans 'تأكيد استلام' %}";
+                break;
+            case 'rejected':
+                statusText = "{% trans 'رفض' %}";
+                break;
+            case 'canceled':
+                statusText = "{% trans 'إلغاء' %}";
+                break;
+            default:
+                statusText = "{% trans 'تحديث حالة' %}";
+        }
+        
+        document.getElementById('statusUpdateMessage').textContent = 
+            `{% trans 'هل أنت متأكد من' %} ${statusText} {% trans 'الطلب رقم' %} #${orderId}؟`;
+        
+        // Show the modal
+        window.statusUpdateModal.show();
+        
+        // Set up the confirm button click handler
+        window.confirmStatusUpdateBtn.onclick = function() {
+            submitStatusUpdate(currentOrderId, currentStatus);
+            window.statusUpdateModal.hide();
+        };
+    }
+
+    function submitStatusUpdate(orderId, newStatus) {
+        const csrftoken = getCookie('csrftoken');
+        
+        fetch(`{% url 'order_management:order_status_update' 0 %}`.replace('0', orderId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('{% trans "تم تحديث حالة الطلب بنجاح" %}', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('{% trans "حدث خطأ أثناء تحديث حالة الطلب" %}', 'danger');
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
+
+    function showToast(message, type = 'success') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        // Add toast to container
+        toastContainer.appendChild(toastEl);
+
+        // Initialize and show toast
+        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+        toast.show();
+
+        // Remove toast element after it's hidden
+        toastEl.addEventListener('hidden.bs.toast', () => {
+            toastEl.remove();
+        });
+    }
 </script>
 {% endblock %}

@@ -4,8 +4,9 @@ from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
 from user_accounts.models import Customer
 from product_catalog.models import Product
+from core.utils import BaghdadTimestampMixin
 
-class Order(models.Model):
+class Order(models.Model, BaghdadTimestampMixin):
     STATUS_CHOICES = (
         ('pending', 'بانتظار الموافقة'),
         ('accepted', 'تم قبول الطلب'),

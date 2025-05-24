@@ -1,0 +1,18 @@
+{% load baghdad_time %}
+
+<div class="baghdad-datetime-component" data-show-seconds="{{ show_seconds }}" data-compact="{{ compact }}">
+    {% if compact %}
+        <div id="baghdad-datetime-compact" class="datetime-compact" title="توقيت بغداد">
+            <i class="fas fa-clock me-1"></i>
+            <span class="datetime-text">{{ current_time|format_baghdad_date }} {{ current_time|format_baghdad_time }}</span>
+        </div>
+    {% else %}
+        <div class="datetime-full">
+            <div id="baghdad-date" class="date-display">{{ current_time|format_baghdad_date }}</div>
+            <div id="baghdad-time" class="time-display">
+                <i class="fas fa-clock me-1"></i>
+                {{ current_time|format_baghdad_time }}
+            </div>
+        </div>
+    {% endif %}
+</div> 

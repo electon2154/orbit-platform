@@ -10,6 +10,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="{% static 'js/geolocation.js' %}"></script>
 <style>
     .location-field {
         cursor: pointer;
@@ -294,13 +295,15 @@ function hideLocationPicker() {
 }
 
 function initMap() {
-    map = L.map('map').setView([33.3152, 44.3661], 7); // Default view centered on Iraq
+    // Initialize map with current location using GeolocationUtil
+    map = GeolocationUtil.initMapWithCurrentLocation('map', {
+        zoom: 13,
+        fallbackZoom: 7,
+        showAccuracyCircle: false,
+        autoSetView: true
+    });
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    // Add marker for the current location (if any)
+    // Add marker for the current location (if any existing data)
     const locationField = document.getElementById('id_location');
     if (locationField && locationField.value) {
         try {
@@ -318,6 +321,23 @@ function initMap() {
         } catch (e) {
             console.error("Error setting initial marker: ", e);
         }
+    } else {
+        // If no existing location data, try to get current location and set in form
+        GeolocationUtil.getCurrentLocation(
+            (coords) => {
+                // Set coordinates in form fields
+                GeolocationUtil.setCoordinatesInForm(coords, 'latitude', 'longitude', 'id_location');
+                
+                // Add marker at current location
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker([coords.lat, coords.lng]).addTo(map);
+            },
+            (error) => {
+                console.log('Could not get current location for initial setup:', error.message);
+            }
+        );
     }
     
     // Add click event to map

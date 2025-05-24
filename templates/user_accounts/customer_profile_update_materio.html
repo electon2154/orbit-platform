@@ -10,6 +10,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="{% static 'js/geolocation.js' %}"></script>
 <style>
     .location-field {
         cursor: pointer;
@@ -154,6 +155,9 @@
                                 </div>
                                 <div class="location-footer">
                                     <button type="button" class="btn btn-secondary me-2" onclick="hideLocationPicker()">{% trans "إلغاء" %}</button>
+                                    <button type="button" class="btn btn-info me-2" onclick="getCurrentLocationManually()">
+                                        <i class="fas fa-location-arrow me-1"></i> {% trans "الموقع الحالي" %}
+                                    </button>
                                     <button type="button" class="btn btn-primary" onclick="confirmLocation()">{% trans "تأكيد الموقع" %}</button>
                                 </div>
                             </div>
@@ -212,28 +216,48 @@ function initializeMap() {
         const mapContainer = document.getElementById('map');
         if (!mapContainer) return;
 
-        // Create map
-        map = L.map('map').setView([33.3152, 44.3661], 7); // Center on Iraq
-
-        // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        // Create map with current location using GeolocationUtil
+        map = GeolocationUtil.initMapWithCurrentLocation('map', {
+            zoom: 13,
+            fallbackZoom: 7,
+            showAccuracyCircle: false,
+            autoSetView: true
+        });
 
         // Add click event to map
         map.on('click', function(e) {
             placeMarker(e.latlng);
         });
 
-        // Add marker if location exists
+        // Always try to get current location first, then fallback to saved location
         const locationField = document.querySelector('.location-field');
-        if (locationField && locationField.value) {
-            const [lat, lng] = locationField.value.split(',').map(coord => parseFloat(coord.trim()));
-            if (!isNaN(lat) && !isNaN(lng)) {
-                placeMarker({ lat, lng });
-                map.setView([lat, lng], 13);
+        GeolocationUtil.getCurrentLocation(
+            (coords) => {
+                // Set coordinates in form fields
+                GeolocationUtil.setCoordinatesInForm(coords, 'latitude', 'longitude');
+                
+                // Add marker at current location
+                placeMarker(coords);
+                
+                // Don't update the form location field automatically - let user decide
+                console.log('Current location detected and set on map');
+            },
+            (error) => {
+                console.log('Could not get current location, using saved location if available:', error.message);
+                
+                // Fallback to saved location if current location fails
+                if (locationField && locationField.value) {
+                    const [lat, lng] = locationField.value.split(',').map(coord => parseFloat(coord.trim()));
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        placeMarker({ lat, lng });
+                        map.setView([lat, lng], 13);
+                        
+                        // Set coordinates in form fields
+                        GeolocationUtil.setCoordinatesInForm({ lat, lng }, 'latitude', 'longitude');
+                    }
+                }
             }
-        }
+        );
 
         isMapInitialized = true;
     }
@@ -286,6 +310,32 @@ function confirmLocation() {
         // Hide the overlay
         hideLocationPicker();
     }
+}
+
+function getCurrentLocationManually() {
+    GeolocationUtil.getCurrentLocation(
+        (coords) => {
+            // Set coordinates in form fields
+            GeolocationUtil.setCoordinatesInForm(coords, 'latitude', 'longitude');
+            
+            // Update map view and marker
+            if (map) {
+                map.setView([coords.lat, coords.lng], 13);
+                
+                // Remove existing marker
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                
+                // Add new marker at current location
+                marker = L.marker([coords.lat, coords.lng]).addTo(map);
+            }
+        },
+        (error) => {
+            alert('{% trans "لا يمكن تحديد الموقع الحالي. يرجى تحديد الموقع يدوياً على الخريطة" %}');
+            console.error('Geolocation error:', error.message);
+        }
+    );
 }
 </script>
 {% endblock %} 

@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}{% trans 'تسجيل' %}{% endblock %}
+{% block title %}{% trans 'إنشاء حساب جديد' %}{% endblock %}
 
 {% block page_title %}
 <h4 class="fw-bold py-2 mb-0">{% trans 'إنشاء حساب جديد' %}</h4>
@@ -10,6 +10,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="{% static 'js/geolocation.js' %}"></script>
 <style>
     .step-wizard {
         width: 100%;
@@ -392,6 +393,9 @@
                             </div>
                             <div class="location-footer">
                                 <button type="button" class="btn btn-secondary me-2" onclick="hideLocationPicker()">{% trans "إلغاء" %}</button>
+                                <button type="button" class="btn btn-info me-2" onclick="getCurrentLocationManually()">
+                                    <i class="fas fa-location-arrow me-1"></i> {% trans "الموقع الحالي" %}
+                                </button>
                                 <button type="button" class="btn btn-primary" onclick="confirmLocation()">{% trans "تأكيد الموقع" %}</button>
                             </div>
                         </div>
@@ -521,13 +525,15 @@ function hideLocationPicker() {
 }
 
 function initMap() {
-    map = L.map('map').setView([33.3152, 44.3661], 7); // Default view centered on Iraq
+    // Initialize map with current location using GeolocationUtil
+    map = GeolocationUtil.initMapWithCurrentLocation('map', {
+        zoom: 13,
+        fallbackZoom: 7,
+        showAccuracyCircle: false,
+        autoSetView: true
+    });
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    // Add marker for the current location (if any)
+    // Add marker for the current location (if any existing data)
     const locationField = document.getElementById('id_location');
     if (locationField && locationField.value) {
         try {
@@ -545,6 +551,23 @@ function initMap() {
         } catch (e) {
             console.error("Error setting initial marker: ", e);
         }
+    } else {
+        // If no existing location data, try to get current location and set in form
+        GeolocationUtil.getCurrentLocation(
+            (coords) => {
+                // Set coordinates in form fields
+                GeolocationUtil.setCoordinatesInForm(coords, 'latitude', 'longitude', 'id_location');
+                
+                // Add marker at current location
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker([coords.lat, coords.lng]).addTo(map);
+            },
+            (error) => {
+                console.log('Could not get current location for initial setup:', error.message);
+            }
+        );
     }
     
     // Add click event to map
@@ -572,11 +595,13 @@ function initPreviewMap() {
     locationPreview.style.display = 'block';
     
     if (!isPreviewMapInitialized) {
-        previewMap = L.map('locationPreview').setView([33.3152, 44.3661], 7);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(previewMap);
+        // Initialize preview map with current location
+        previewMap = GeolocationUtil.initMapWithCurrentLocation('locationPreview', {
+            zoom: 13,
+            fallbackZoom: 7,
+            showAccuracyCircle: false,
+            autoSetView: true
+        });
         
         isPreviewMapInitialized = true;
     }
@@ -621,6 +646,32 @@ function confirmLocation() {
     } else {
         alert('{% trans "يرجى تحديد الموقع على الخريطة" %}');
     }
+}
+
+function getCurrentLocationManually() {
+    GeolocationUtil.getCurrentLocation(
+        (coords) => {
+            // Set coordinates in form fields
+            GeolocationUtil.setCoordinatesInForm(coords, 'latitude', 'longitude');
+            
+            // Update map view and marker
+            if (map) {
+                map.setView([coords.lat, coords.lng], 13);
+                
+                // Remove existing marker
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                
+                // Add new marker at current location
+                marker = L.marker([coords.lat, coords.lng]).addTo(map);
+            }
+        },
+        (error) => {
+            alert('{% trans "لا يمكن تحديد الموقع الحالي. يرجى تحديد الموقع يدوياً على الخريطة" %}');
+            console.error('Geolocation error:', error.message);
+        }
+    );
 }
 
 // Form field validation

@@ -75,6 +75,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',  # For internationalization
+    'core.middleware.BaghdadTimezoneMiddleware',  # Baghdad timezone activation
+    'core.middleware.TimestampMiddleware',  # Automatic timestamping
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -134,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ar'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Baghdad'
 
 USE_I18N = True
 

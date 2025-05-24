@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from ckeditor.fields import RichTextField
+from core.utils import BaghdadTimestampMixin
 
-class Category(models.Model):
+class Category(models.Model, BaghdadTimestampMixin):
     name = models.CharField(max_length=255, verbose_name='اسم الفئة')
     description = models.TextField(blank=True, verbose_name='الوصف')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
@@ -16,7 +17,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-class Product(models.Model):
+class Product(models.Model, BaghdadTimestampMixin):
     name = models.CharField(max_length=255, verbose_name='اسم المنتج')
     code = models.CharField(max_length=50, blank=True, auto_created=True, verbose_name='رمز المنتج')
     description = RichTextField(verbose_name='الوصف')
@@ -37,7 +38,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-class ProductCategory(models.Model):
+class ProductCategory(models.Model, BaghdadTimestampMixin):
     name = models.CharField(max_length=100, unique=True, verbose_name="اسم الفئة")
     description = models.TextField(blank=True, null=True, verbose_name="وصف الفئة")
     created_at = models.DateTimeField(auto_now_add=True)

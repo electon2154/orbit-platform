@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from location_field.models.plain import PlainLocationField
+from core.utils import BaghdadTimestampMixin
 
-class Company(models.Model):
+class Company(models.Model, BaghdadTimestampMixin):
     name = models.CharField(max_length=255, verbose_name='اسم الشركة')
     logo = models.ImageField(upload_to='company_logos/', null=True, blank=True, verbose_name='الشعار')
     description = models.TextField(verbose_name='الوصف')

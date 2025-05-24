@@ -11,6 +11,7 @@ from django.contrib.auth.views import LoginView
 from .forms import RegistrationForm, CompanyProfileForm, CustomerProfileForm
 from .models import CustomUser, CompanyProfile, CustomerProfile, Customer
 from company_profiles.models import Company
+from product_catalog.models import Product
 from django.db import models
 from order_management.models import Order
 from django.db.models import Q
@@ -286,16 +287,54 @@ def delete_account(request):
         return redirect('user_accounts:login')
     return redirect('user_accounts:company_profile_update')
 
+# Browse companies and products
+@login_required
+def browse_products(request):
+    """View for customers to browse available products"""
+    # Only customers should access this page
+    if request.user.user_type == 'company':
+        messages.error(request, _('هذه الصفحة متاحة فقط لحسابات المتاجر.'))
+        return redirect('home')
+    
+    # Get all products with related data
+    products = Product.objects.select_related('company', 'category').all()
+    
+    # Filter by category if specified
+    category_id = request.GET.get('category')
+    if category_id:
+        products = products.filter(category_id=category_id)
+    
+    # Search functionality
+    search_query = request.GET.get('q')
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
+    
+    # Get all categories for filtering
+    categories = Category.objects.all()
+
+    context = {
+        'products': products,
+        'categories': categories,
+    }
+    
+    return render(request, 'user_accounts/product_browse.html', context)
+
+
+
 @login_required
 def browse_companies(request):
     """View for customers to browse available companies"""
     # Only customers should access this page
-    if request.user.user_type != 'customer':
+    if request.user.user_type == 'company':
         messages.error(request, _('هذه الصفحة متاحة فقط لحسابات المتاجر.'))
         return redirect('home')
     
     # Get all companies with related data
     companies = CompanyProfile.objects.select_related('user', 'category').all()
+    products = []
     
     # Filter by category if specified
     category_id = request.GET.get('category')
@@ -305,6 +344,11 @@ def browse_companies(request):
     # Search functionality
     search_query = request.GET.get('q')
     if search_query:
+        products = Product.objects.filter(
+            Q(name__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
+        products = products.order_by('-price')[:10]
         companies = companies.filter(
             Q(company_name__icontains=search_query) | 
             Q(bio__icontains=search_query)
@@ -314,13 +358,14 @@ def browse_companies(request):
     categories = Category.objects.all()
     
     context = {
+        'products': products,
         'companies': companies,
         'categories': categories,
     }
     
     return render(request, 'user_accounts/company_browse.html', context)
 
-# API endpoint for company search
+# API endpoint for company search and products
 def search_companies(request):
     """API endpoint for searching companies with suggestions"""
     query = request.GET.get('q', '')
@@ -354,3 +399,79 @@ def search_companies(request):
         })
     
     return JsonResponse(results, safe=False)
+
+# API endpoint for products search
+def search_products(request):
+    """API endpoint for searching products with suggestions"""
+    query = request.GET.get('q', '')
+    
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    
+    # Search in product names and descriptions
+    products = Product.objects.filter(
+        Q(name__icontains=query) | 
+        Q(description__icontains=query)
+    ).select_related('company', 'category')[:10]  # Limit to 10 results
+    
+    # Format results for JSON response
+    results = []
+    for product in products:
+        results.append({
+            'id': product.id,
+            'name': product.name,
+            'image': product.image.url if product.image else '/static/images/default-product.png',
+            'description': product.description[:100] if product.description else '',
+            'company_name': product.company.name,
+            'category_name': product.category.name,
+        })
+    
+    return JsonResponse(results, safe=False)
+
+# API endpoint for products and companies search
+def search_products_and_companies(request):
+    """API endpoint for searching products and companies with suggestions"""
+    query = request.GET.get('q', '')
+    
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+        
+    # Search in product and company names and descriptions
+    products = Product.objects.filter(
+        Q(name__icontains=query) | 
+        Q(description__icontains=query)
+    ).select_related('company', 'category')[:10]  # Limit to 10 results
+    
+    companies = CompanyProfile.objects.filter(
+        Q(company_name__icontains=query) | 
+        Q(bio__icontains=query)
+    ).select_related('category', 'user')[:10]  # Limit to 10 results
+
+    # Format results for JSON response
+    results = []
+    for product in products:
+        results.append({
+            'id': product.id,
+            'name': product.name,
+            'description': product.description[:100] if product.description else '',
+            'company_name': product.company.name,
+            'category_name': product.category.name,
+        })
+
+    for company in companies:
+        results.append({
+            'id': company.user.id,
+            'name': company.company_name,
+            'logo': company.logo.url if company.logo else '/static/images/default-company.png',
+            'category_name': company.category.name,
+        })
+    
+    # Get all categories for filtering
+    categories = Category.objects.all()
+    
+    context = {
+        'companies': companies,
+        'categories': categories,
+    }
+    
+    return render(request, 'user_accounts/company_browse.html', context)

@@ -22,11 +22,14 @@ urlpatterns = [
     path('company/dashboard/', views.company_dashboard, name='company_dashboard'),
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     
-    # Browse companies
+    # Browse companies and products
     path('browse/companies/', views.browse_companies, name='browse_companies'),
+    path('browse/products/', views.browse_products, name='browse_products'),
     
     # API endpoints
     path('api/search/companies/', views.search_companies, name='search_companies'),
+    path('api/search/products/', views.search_products, name='search_products'),
+    path('api/search/products_and_companies/', views.search_products_and_companies, name='search_products_and_companies'),
     
     # Profile
     path('profile/update/customer/', views.CustomerProfileUpdateView.as_view(), name='customer_profile_update'),
